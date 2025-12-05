@@ -17,6 +17,7 @@ plugins:
   - jekyll-seo-tag
   - jekyll-paginate
   - jekyll-gist
+  - jekyll-sitemap
 
 # Sass configuration
 sass:
