@@ -18,6 +18,7 @@ plugins:
   - jekyll-paginate
   - jekyll-gist
   - jekyll-sitemap
+  - jekyll-redirect-from
 
 # Sass configuration
 sass:
