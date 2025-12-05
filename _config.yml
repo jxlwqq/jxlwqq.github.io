@@ -1,0 +1,41 @@
+# 网站设置
+title: 我的博客
+description: 欢迎来到我的个人博客
+baseurl: "" # 子路径，例如 /blog
+url: "https://jxlwqq.github.io" # 网站的基础 URL
+
+# 构建设置
+markdown: kramdown
+# theme: jekyll-theme-hacker # Removed for Poole theme
+
+# Poole Settings
+paginate: 5
+permalink: pretty
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-paginate
+  - jekyll-gist
+
+# Sass configuration
+sass:
+  sass_dir: _sass
+  style: compressed
+
+# 作者信息
+author:
+  name: jxlwqq
+  email: jxlwqq@gmail.com
+
+# 排除文件
+exclude:
+  - temp_poole
+  - .editorconfig
+  - .git
+  - .jekyll-cache
+  - Gemfile
+  - Gemfile.lock
+  - LICENSE.md
+  - README.md
+  - AGENTS.md
