@@ -9,7 +9,7 @@ categories: ai agent
 > 
 > 作者：Geoffrey Huntley
 
-![how to build a coding agent: free workshop](https://ghuntley.com/content/images/size/w2000/2025/07/how-to-build-an-agent.001.jpg)
+![how to build a coding agent: free workshop](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.001.jpg)
 
 今天我在这里教大家如何构建一个编码 Agent。你可能已经厌倦了听到“Agent”这个词。
 
@@ -19,29 +19,29 @@ categories: ai agent
 
 让我以以下事实开场：
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.002.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.002.png)
 
 这并不难
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.003.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.003.png)
 
 构建一个编码 Agent
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.004.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.004.png)
 
 只有 300 行代码
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.005.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.005.png)
 
 在一个循环中运行
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.006.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.006.png)
 
 使用 LLM token，这就是全部。
 
 300 行代码在一个循环中运行，使用 LLM token。你只需要不断向循环中投入 token，然后你就拥有了一个 Agent。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.007.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.007.png)
 
 今天，我们要构建一个。我会解释它是如何工作的基本原理。既然我们现在是在 2025 年，与 AI 协助并发工作已成为常态。那么，有什么比让一个 Agent 为我构建一个 Agent 更好的方式来演示重点呢？
 
@@ -51,27 +51,27 @@ categories: ai agent
 
 下次你在 Zoom 通话时，考虑一下你本可以让一个 Agent 在通话期间构建你计划要做的工作。如果这对你来说不是常态，而对你的同事来说是，那么你自然不会领先。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.009.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.009.png)
 
 请构建你自己的
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.010.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.010.png)
 
 因为这些知识
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.011.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.011.png)
 
 将改变你
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.012.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.012.png)
 
 从消费者
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.013.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.013.png)
 
 变成生产者
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.014.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.014.png)
 
 能够自动化事务
 
@@ -91,7 +91,7 @@ categories: ai agent
 
 [the six-month recap: closing talk on AI at Web Directions, Melbourne, June 2025](https://ghuntley.com/six-month-recap/)
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.015.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.015.png)
 
 现在，你将处于上述旅程的某个位置。
 
@@ -109,27 +109,27 @@ categories: ai agent
 
 所以，我叫 Geoffrey Huntley。我曾是 Canva 的开发者生产力技术主管，但几个月前，我成为了 Sourcegraph 构建 [Amp](https://ampcode.com/) 的工程师之一。这是一个大约六人的核心小团队。我们用 AI 构建 AI。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.016.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.016.png)
 
 ampcode.com
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.017.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.017.png)
 
 cursor
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.018.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.018.png)
 
 windsurf
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.019.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.019.png)
 
 claude code
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.020.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.020.png)
 
 github co-pilot
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.022.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.022.png)
 
 都是在 LLM token 循环中运行的代码行。
 
@@ -139,11 +139,11 @@ Cursor, Windsurf, Claude Code, GitHub Copilot, 和 Amp 只是在 LLM token 循�
 
 构建你自己的太容易了...
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.023.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.023.png)
 
 你只需要了解几个关键概念。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.024.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.024.png)
 
 并非所有 LLM 都是 Agentic（代理式）的。
 
@@ -157,11 +157,11 @@ Cursor, Windsurf, Claude Code, GitHub Copilot, 和 Amp 只是在 LLM token 循�
 
 那是 Grok。那是一个低安全性模型。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.025.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.025.png)
 
 如果你想要“道德一致”的东西，那就是 Anthropic 或 OpenAI。所以那是高安全性。同样，你有 Oracle。Oracle 与 Agentic 截然相反。Oracle 适合总结任务或需要高水平思考的任务。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.026.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.026.png)
 
 同时，你有像 Anthropic 这样的提供商，他们的 Claude Sonnet 是一只数字松鼠（见下文）。
 
@@ -190,7 +190,7 @@ Sonnet 是一只只想做工具调用的机器松鼠。它不会花太多时间�
 
 Amp 的 oracle 只是另一个注册为 Agentic LLM 工具的 LLM，它可以对其进行函数调用。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.027.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.027.png)
 
 下一个要学习的重要事情是，你应该只将上下文窗口用于一项活动。当你使用 Cursor 或任何这些工具时，必须在每次活动后清除上下文窗口（见下文）。
 
@@ -200,7 +200,7 @@ LLM 的结果是你分配到草堆中的草堆里的一根针。
 
 如果你开始一个 AI 辅助会话来构建后端 API 控制器，然后重用该会话来研究关于猫鼬的事实。那么当你告诉它重新设计网站时，网站最终可能会包含关于你的 API 或猫鼬的事实，或者两者兼有，这也就不足为奇了。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.028.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.028.png)
 
 注：自本次研讨会以来，Sonnet 的上下文窗口已增加到 1m。
 
@@ -224,17 +224,17 @@ Sonnet 宣传的上下文窗口是 200k。然而，你不能全部使用它，�
 
 何时应该使用 MCP，何时不应该使用 MCP，以及上下文窗口中的分配是如何工作的。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.029.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.029.png)
 
 让我们回去检查一下我们在后台构建的 Agent。如果你仔细观察，你可以看到循环以及它是如何调用其他工具的。
 
 本质上，这一切是如何工作的在下面的循环中概述。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.030.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.030.png)
 
 对于来自用户的每一条输入或工具调用的结果，都会分配给响应，并将该响应发送以进行推理：
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/08/Untitled-diagram-_-Mermaid-Chart-2025-08-24-015242.png)
+![Image](/assets/images/how-to-build-a-coding-agent/inference-loop-diagram.png)
 
 推理循环（减去工具注册）
 
@@ -258,7 +258,7 @@ Boom！就是这样！
 
 它目前是一个存根工具，但你可以看到它；我们有一个方法，LLM 正在从我们的查询中将参数传递给该方法。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.031.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.031.png)
 
 当我们谈论 Agentic 时，我们指的是某种工具调用，某种已经在其奖励函数上受过训练以调用工具的东西。有些模型经过明确训练；它们只想追逐坚果，就像松鼠一样（见下文）。这不是坚果，是工具。
 
@@ -268,7 +268,7 @@ Boom！就是这样！
 
 它就这么简单。你注册工具，描述如何调用它，然后它就可以工作了。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.032.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.032.png)
 
 让我们开始制作真正的编码 Agent 的短暂旅程。我们有一个模拟函数和一个模拟工具，但 `get_weather(Melbourne, Australia)` 目前什么也没做，所以让我们修复它。
 
@@ -276,13 +276,13 @@ Boom！就是这样！
 
 这是注册工具后我们更新后的序列图的样子。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/08/Untitled-diagram-_-Mermaid-Chart-2025-08-24-015409.png)
+![Image](/assets/images/how-to-build-a-coding-agent/updated-sequence-diagram.png)
 
 这就是最纯粹形式的编码 Agent，没有任何 UI。
 
 由于我们今天不是在制作天气应用程序，让我们换个档次来构建编码 Agent 的第一个原语。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.034.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.034.png)
 
 任何编码 Agent 背后的第一个原语是读取工具。所有编码 Agent 都有一个读取工具，可以将文件读取到上下文窗口中，或者是整个文件，或者对于较大的文件，分块读取。
 
@@ -327,7 +327,7 @@ EOF > riddle.txt
 >
 > **Claude:** After reading the riddle, I can solve it for you:The answer to the riddle is: a horse.Let's analyze the clues:"I have a mane but I'm not a lion" - Horses have manes, which is hair growing from the top of the neck."I have four legs but I'm not a table" - Horses walk on four legs."I can gallop but I'm not running" - Galloping is a specific gait of horses."People say I'm disagreeable because I always say 'neigh'" - "Neigh" is the sound a horse makes, and it sounds like "nay" (which means "no" or disagreement).All of these clues point to a horse as the answer to the riddle.
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.033.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.033.png)
 
 任何编码 Agent 背后的第二个原语是列表工具。所有编码 Agent 都有一个列出文件工具，它列出给定路径中的所有文件和目录。
 
@@ -364,7 +364,7 @@ var ListFilesDefinition = ToolDefinition{
 
 Boom！我们现在有一个读取文件工具和一个列出文件工具，你可以看到它们的函数被调用并从我们的原始提示链接在一起。
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.035.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.035.png)
 
 任何编码 harness 背后的第三个原语是 bash 工具，它正如其名。它使 LLM 能够在你的计算机上执行命令。
 
@@ -397,7 +397,7 @@ var BashDefinition = ToolDefinition{
 >
 > **Claude:** Based on the output of the `ps aux` command, here's a summary of the processes running on this computer:System Summary:This is a multi-CPU system with 96 cores/threads (visible from the many CPU-related kernel threads)Running Linux with systemd as the init systemThe system has been up since August 20th (seen in START column)
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.036.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.036.png)
 
 任何编码 harness 背后的第四个原语是编辑工具。编辑工具也正如其名。它从推理中获取结果并将编辑应用于文件。
 
@@ -433,7 +433,7 @@ var BashDefinition = ToolDefinition{
 
 And voila，我们现在有了一个编码 Agent。是不是在这一点上我们可以抛出一些其他提示说，“嘿，让我们做 FizzBuzz 到 100，它就会工作。”
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/08/how-to-build-a-agent.039.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.039.png)
 
 任何编码 harness 背后的第五个也是最后一个原语是搜索工具。如果我告诉你索引源代码或任何智能都没有魔法呢？
 
@@ -493,7 +493,7 @@ You can search by pattern, file type, or directory.`,
 >
 > **Claude:** I found the riddle in the file `riddle.txt`!
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.037.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.037.png)
 
 从这一点开始的一切都只是调整你的提示的问题。由于时间限制，我们没有深入探讨 harness 提示的概念。Harness 提示是你注册工具的地方。它包含诸如你正在运行的操作系统之类的信息，因此它知道是使用 PowerShell (Windows) 还是 bash (Linux 或 macOS)。
 
@@ -515,7 +515,7 @@ You can search by pattern, file type, or directory.`,
 
 [GitHub - x1xhlol/system-prompts-and-models-of-ai-tools](https://github.com/x1xhlol/system-prompts-and-models-of-ai-tools)
 
-![Image](https://ghuntley.com/content/images/size/w1600/2025/08/how-to-build-a-agent.041.png)
+![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.041.png)
 
 回顾一下。你刚刚构建的是一个编码 Agent。也许你不想创建一个编码 Agent。如果你从事数据工程职业怎么办？那会是什么样子？想想你日常做的所有活动，拥有使用这些原语进行自动化的能力对你的雇主来说可能是方便或有价值的。
 
