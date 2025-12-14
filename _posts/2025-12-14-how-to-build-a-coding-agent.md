@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "如何构建一个编码 Agent：免费研讨会"
+title: "如何构建一个编码 Agent"
 date: 2025-12-14 12:00:00 +0800
 categories: ai agent
 ---
@@ -11,9 +11,7 @@ categories: ai agent
 
 ![how to build a coding agent: free workshop](https://ghuntley.com/content/images/size/w2000/2025/07/how-to-build-an-agent.001.jpg)
 
-😎 以下内容是上个月开发的，并且已经在两个会议上发表过。如果你希望我在你的公司举办类似的研讨会，请[联系我](https://ghuntley.com/workshops/)。
-
-大家好，今天我在这里教大家如何构建一个编码 Agent。在这个会议阶段，你可能已经厌倦了听到“Agent”这个词。
+今天我在这里教大家如何构建一个编码 Agent。你可能已经厌倦了听到“Agent”这个词。
 
 你经常听到这个词。然而，似乎每个人都在松散地使用这个术语，而没有清楚地理解它的含义或这些编码 Agent 内部是如何运作的。是时候揭开面纱，展示这里并没有什么护城河了。
 
@@ -45,7 +43,7 @@ categories: ai agent
 
 ![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.007.png)
 
-今天，我们要构建一个。我们将现场进行，我会解释它是如何工作的基本原理。既然我们现在是在 2025 年，与 AI 协助并发工作已成为常态。那么，有什么比让一个 Agent 在我发表演讲的同时为我构建一个 Agent 更好的方式来演示这次演讲的重点呢？
+今天，我们要构建一个。我会解释它是如何工作的基本原理。既然我们现在是在 2025 年，与 AI 协助并发工作已成为常态。那么，有什么比让一个 Agent 为我构建一个 Agent 更好的方式来演示重点呢？
 
 酷。我们现在正在构建一个 Agent。这是我们行业正在发生的变化之一，因为工作可以并发完成，而且是在你离开电脑的时候。
 
@@ -85,11 +83,11 @@ categories: ai agent
 
 在 2025 年，你应该熟悉什么是主键以及如何创建一个 Agent，因为知道这个循环是什么以及如何构建一个 Agent 现在是雇主在让你进门之前寻找的基础知识。
 
-[Yes, You Can Use AI in Our Interviews. In fact, we insist - Canva Engineering Blog](https://www.canva.dev/blog/engineering/yes-you-can-use-ai-in-our-interviews/?ref=ghuntley.com)
+[Yes, You Can Use AI in Our Interviews. In fact, we insist - Canva Engineering Blog](https://www.canva.dev/blog/engineering/yes-you-can-use-ai-in-our-interviews/)
 
 因为这些知识将把你从 AI 的消费者转变为能够编排工作职能的 AI 生产者。雇主现在正在寻找能够在组织内自动化任务的个人。
 
-如果你今天下午晚些时候参加会议闭幕式（见下文），我将更深入地探讨上述内容。
+关于这一点的更深入探讨，可以参考以下内容：
 
 [the six-month recap: closing talk on AI at Web Directions, Melbourne, June 2025](https://ghuntley.com/six-month-recap/)
 
@@ -109,7 +107,7 @@ categories: ai agent
 
 软件和数据工程师感到惊讶的是，这一切发生得如此之快。自从第一个编码 Agent 发布以来已经八个月了，大多数人仍然不知道构建一个是多么简单，这个循环是多么强大，以及它对我们职业的颠覆性影响。
 
-所以，我叫 Geoffrey Huntley。我曾是 Canva 的开发者生产力技术主管，但几个月前，我成为了 Sourcegraph 构建 [Amp](https://ampcode.com/?ref=ghuntley.com) 的工程师之一。这是一个大约六人的核心小团队。我们用 AI 构建 AI。
+所以，我叫 Geoffrey Huntley。我曾是 Canva 的开发者生产力技术主管，但几个月前，我成为了 Sourcegraph 构建 [Amp](https://ampcode.com/) 的工程师之一。这是一个大约六人的核心小团队。我们用 AI 构建 AI。
 
 ![Image](https://ghuntley.com/content/images/size/w1600/2025/07/how-to-build-a-agent.016.png)
 
@@ -149,7 +147,7 @@ Cursor, Windsurf, Claude Code, GitHub Copilot, 和 Amp 只是在 LLM token 循�
 
 并非所有 LLM 都是 Agentic（代理式）的。
 
-就像你有不同类型的汽车一样，如果你想越野，你有 [40 系列](https://en.wikipedia.org/wiki/Toyota_Land_Cruiser_(J40)?ref=ghuntley.com)，如果你想运送人，你有载人汽车。
+就像你有不同类型的汽车一样，如果你想越野，你有 [40 系列](https://en.wikipedia.org/wiki/Toyota_Land_Cruiser_(J40))，如果你想运送人，你有载人汽车。
 
 同样的原则适用于 LLM，我已经能够将它们的行为映射到一个象限中。
 
@@ -188,7 +186,7 @@ Sonnet 是一只只想做工具调用的机器松鼠。它不会花太多时间�
 
 我们称之为 Oracle。Oracle 只是 GPT 作为一个工具连接进来，Claude Sonnet 可以函数调用它来获得指导，检查工作进度，并进行研究/规划。
 
-[Oracle Amp](https://ampcode.com/news/oracle?ref=ghuntley.com)
+[Oracle Amp](https://ampcode.com/news/oracle)
 
 Amp 的 oracle 只是另一个注册为 Agentic LLM 工具的 LLM，它可以对其进行函数调用。
 
@@ -242,7 +240,7 @@ Sonnet 宣传的上下文窗口是 200k。然而，你不能全部使用它，�
 
 让我们打开研讨会材料（如下）并通过 `go run chat.go` 运行基本的聊天应用程序：
 
-[GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent?ref=ghuntley.com)
+[GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent)
 
 > **You:** You are a weather expert. When I ask you about the weather in a given location, I want you to reply with `get_weather(<location_name>)`. I will then tell you what the weather in that location is. Understood?
 >
@@ -297,7 +295,7 @@ var ReadFileDefinition = ToolDefinition{
 }
 ```
 
-[GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent?ref=ghuntley.com)
+[GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent)
 
 让我们再次打开研讨会材料（上文）并创建一个文件：
 
@@ -342,7 +340,7 @@ var ListFilesDefinition = ToolDefinition{
 }
 ```
 
-[GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent?ref=ghuntley.com)
+[GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent)
 
 让我们再次打开研讨会材料（上文）并通过 `go run list_files.go` 运行基本的聊天应用程序：
 
@@ -379,7 +377,7 @@ var BashDefinition = ToolDefinition{
 }
 ```
 
-[GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent?ref=ghuntley.com)
+[GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent)
 
 让我们再次打开研讨会材料（上文）并运行 bash 工具：
 
@@ -403,7 +401,7 @@ var BashDefinition = ToolDefinition{
 
 任何编码 harness 背后的第四个原语是编辑工具。编辑工具也正如其名。它从推理中获取结果并将编辑应用于文件。
 
-[GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent?ref=ghuntley.com)
+[GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent)
 
 让我们再次打开研讨会材料（上文）并运行编辑工具：
 
@@ -503,19 +501,19 @@ You can search by pattern, file type, or directory.`,
 
 如果你想看一个完全成熟的编码 Agent 的例子，请访问下面的博客文章：
 
-[source code analysis of Amazon Kiro](https://ghuntley.com/amazon-kiro-source-code/)
+[source code analysis of Amazon Kiro](https://ghuntley.com/amazon-kiro-source-code/) (需要付费订阅)
 
 已经有很多开源编码 Agent，例如 SST Open Code
 
-[GitHub - sst/opencode](https://github.com/sst/opencode?ref=ghuntley.com)
+[GitHub - sst/opencode](https://github.com/sst/opencode)
 
 或者这个 100 行的 Agent，它在 SWE Bench 上得分很高。
 
-[GitHub - SWE-agent/mini-swe-agent](https://github.com/SWE-agent/mini-swe-agent?ref=ghuntley.com)
+[GitHub - SWE-agent/mini-swe-agent](https://github.com/SWE-agent/mini-swe-agent)
 
 如果你想要一些灵感，GitHub 上有许多存储库泄露了开发人员工具 harness 和工具提示。
 
-[GitHub - x1xhlol/system-prompts-and-models-of-ai-tools](https://github.com/x1xhlol/system-prompts-and-models-of-ai-tools?ref=ghuntley.com)
+[GitHub - x1xhlol/system-prompts-and-models-of-ai-tools](https://github.com/x1xhlol/system-prompts-and-models-of-ai-tools)
 
 ![Image](https://ghuntley.com/content/images/size/w1600/2025/08/how-to-build-a-agent.041.png)
 
@@ -527,12 +525,4 @@ You can search by pattern, file type, or directory.`,
 
 [the six-month recap: closing talk on AI at Web Directions, Melbourne, June 2025](https://ghuntley.com/six-month-recap/)
 
-我希望今天下午晚些时候能在会议闭幕式上见到你。
-
 > 前进并构建吧。
-
-ps. 社交媒体
-
-• X - [https://x.com/GeoffreyHuntley/status/1959453609240007052](https://x.com/GeoffreyHuntley/status/1959453609240007052?ref=ghuntley.com)
-• Linkedin : [https://www.linkedin.com/posts/geoffreyhuntley_how-to-build-an-agent-activity-7365220712707485697-EiJO](https://www.linkedin.com/posts/geoffreyhuntley_how-to-build-an-agent-activity-7365220712707485697-EiJO?utm_source=share&utm_medium=member_desktop&rcm=ACoAAABQKuUB2AJ059keUcRUVLbtmoa6miLVlTI)
-• Bluesky: [https://bsky.app/profile/ghuntley.com/post/3lx4jmqsclk2q](https://bsky.app/profile/ghuntley.com/post/3lx4jmqsclk2q?ref=ghuntley.com)
