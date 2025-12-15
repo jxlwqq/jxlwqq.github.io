@@ -11,13 +11,13 @@ categories: ai agent
 
 ![how to build a coding agent: free workshop](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.001.jpg)
 
-今天我在这里教大家如何构建一个编码 Agent。你可能已经厌倦了听到“Agent”这个词。
+本文将介绍如何构建一个编码 Agent。“Agent”一词如今已屡见不鲜。
 
-你经常听到这个词。然而，似乎每个人都在松散地使用这个术语，而没有清楚地理解它的含义或这些编码 Agent 内部是如何运作的。是时候揭开面纱，展示这里并没有什么护城河了。
+尽管这个术语被频繁提及，但许多人对其确切含义及编码 Agent 的内部运作机制仍缺乏清晰的理解。是时候揭开其神秘面纱，展示其技术门槛并非高不可攀。
 
-学习如何构建编码 Agent 是你在 2025 年个人发展中能做的最好的事情之一，因为它教会你基础知识。一旦你理解了这些基础知识，你将从 AI 的消费者转变为 AI 的生产者，能够用 AI 自动化事务。
+学习如何构建编码 Agent 是 2025 年个人发展中最具价值的投资之一，因为它能让你掌握核心基础。一旦理解了这些基础知识，你将从 AI 的消费者转变为 AI 的生产者，具备利用 AI 实现自动化的能力。
 
-让我以以下事实开场：
+让我们从以下事实开始：
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.002.png)
 
@@ -39,17 +39,17 @@ categories: ai agent
 
 <p class="text-center">使用 LLM token，这就是全部。</p>
 
-300 行代码在一个循环中运行，使用 LLM token。你只需要不断向循环中投入 token，然后你就拥有了一个 Agent。
+仅需 300 行代码在一个循环中运行，消耗 LLM token。只要持续向循环中输入 token，你就拥有了一个 Agent。
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.007.png)
 
-今天，我们要构建一个。我会解释它是如何工作的基本原理。既然我们现在是在 2025 年，与 AI 协助并发工作已成为常态。那么，有什么比让一个 Agent 为我构建一个 Agent 更好的方式来演示重点呢？
+本文将指导你构建一个 Agent，并解释其基本工作原理。在 2025 年，与 AI 协同工作已成为常态。因此，演示这一点的最佳方式莫过于让一个 Agent 来协助构建另一个 Agent。
 
-酷。我们现在正在构建一个 Agent。这是我们行业正在发生的变化之一，因为工作可以并发完成，而且是在你离开电脑的时候。
+现在，我们开始构建一个 Agent。这是行业正在发生的变革之一：工作可以并发进行，甚至在你离开电脑时也能持续推进。
 
-花一周或几天时间进行研究冲刺的日子已经结束了，因为你只需对着电脑说话就可以将想法转化为执行。
+花费数天甚至一周时间进行研究冲刺的日子已成过去，如今你只需通过语音指令即可将想法转化为执行。
 
-下次你在 Zoom 通话时，考虑一下你本可以让一个 Agent 在通话期间构建你计划要做的工作。如果这对你来说不是常态，而对你的同事来说是，那么你自然不会领先。
+下次在 Zoom 通话时，不妨思考一下：你本可以让一个 Agent 在通话期间完成你计划中的工作。如果这对你来说尚非常态，而你的同事却已习以为常，那么你将难以保持领先优势。
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.009.png)
 
@@ -75,37 +75,33 @@ categories: ai agent
 
 <p class="text-center">能够自动化事务</p>
 
-科技行业就像一条传送带——我们需要不断学习新事物。
+科技行业犹如一条不断前行的传送带，要求我们持续学习新知。
 
-如果我问你什么是主键，你应该知道什么是主键。这在很长一段时间里都是常态。
-
-在 2024 年，理解什么是主键是必不可少的。
-
-在 2025 年，你应该熟悉什么是主键以及如何创建一个 Agent，因为知道这个循环是什么以及如何构建一个 Agent 现在是雇主在让你进门之前寻找的基础知识。
+在 2025 年，你应熟悉如何创建一个 Agent。理解这一循环机制以及如何构建 Agent，已成为雇主在招聘时寻找的基础技能。
 
 [Yes, You Can Use AI in Our Interviews. In fact, we insist - Canva Engineering Blog](https://www.canva.dev/blog/engineering/yes-you-can-use-ai-in-our-interviews/)
 
-因为这些知识将把你从 AI 的消费者转变为能够编排工作职能的 AI 生产者。雇主现在正在寻找能够在组织内自动化任务的个人。
+因为这些知识将助你从 AI 的消费者转变为能够编排工作流程的 AI 生产者。雇主如今更青睐那些能够在组织内部实现任务自动化的个人。
 
-关于这一点的更深入探讨，可以参考以下内容：
+关于这一点的深入探讨，可参考以下内容：
 
 [the six-month recap: closing talk on AI at Web Directions, Melbourne, June 2025](https://ghuntley.com/six-month-recap/)
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.015.png)
 
-现在，你将处于上述旅程的某个位置。
+此刻，你正处于上述旅程的某个阶段。
 
-在左上角，我们有“向我证明，这不是真的”，“向我证明，给我看结果”，“向我证明这不是炒作”，以及一群“这还不够好”的人，他们被困在悬崖的左侧，完全忽略了悬崖另一边有人正在完全自动化他们的工作职能。
+在左上角，有些人持怀疑态度：“向我证明这不是真的”、“给我看结果”、“证明这不是炒作”，或者认为“这还不够好”。他们被困在悬崖的一侧，完全忽视了在悬崖的另一边，已有人在完全自动化他们的工作职能。
 
-> 在我看来，任何与 AI 相关的颠覆或失业都不是 AI 本身的结果，而是缺乏个人发展和自我投资的后果。如果你的同事在多个 Agent 之间跳跃，咀嚼想法，并在会议期间在后台运行，而你没有参与其中，那么你自然会落后。
+> 在我看来，任何与 AI 相关的颠覆或失业并非 AI 本身所致，而是缺乏个人发展和自我投资的后果。如果你的同事在多个 Agent 之间切换，处理想法，并在会议期间让 Agent 在后台运行，而你却置身事外，那么落后是必然的。
 
 [What do I mean by some software devs are “ngmi”?](https://ghuntley.com/ngmi/)
 
-不要成为悬崖左边的人。
+切勿成为滞留在悬崖左侧的人。
 
-科技行业的传送带继续向前移动。如果你是 2025 年的 DevOps 工程师，而你没有任何 AWS 或 GCP 的经验，那么你会发现就业市场非常艰难。
+科技行业的传送带持续向前。如果你是 2025 年的 DevOps 工程师，却没有任何 AWS 或 GCP 的经验，那么你会发现就业市场举步维艰。
 
-软件和数据工程师感到惊讶的是，这一切发生得如此之快。自从第一个编码 Agent 发布以来已经八个月了，大多数人仍然不知道构建一个是多么简单，这个循环是多么强大，以及它对我们职业的颠覆性影响。
+软件和数据工程师惊讶于这一切发生得如此之快。自第一个编码 Agent 发布以来仅八个月，大多数人仍未意识到构建它是多么简单，这个循环是多么强大，以及它对我们职业产生的颠覆性影响。
 
 所以，我叫 Geoffrey Huntley。我曾是 Canva 的开发者生产力技术主管，但几个月前，我成为了 Sourcegraph 构建 [Amp](https://ampcode.com/) 的工程师之一。这是一个大约六人的核心小团队。我们用 AI 构建 AI。
 
@@ -133,11 +129,11 @@ categories: ai agent
 
 <p class="text-center">都是在 LLM token 循环中运行的代码行。</p>
 
-Cursor, Windsurf, Claude Code, GitHub Copilot, 和 Amp 只是在 LLM token 循环中运行的一小部分代码。我怎么强调都不为过。模型在这里完成了所有繁重的工作，伙计们。是模型完成了一切。
+Cursor、Windsurf、Claude Code、GitHub Copilot 和 Amp 只是在 LLM token 循环中运行的一小部分代码。需要强调的是：模型在此完成了所有繁重的工作。是模型驱动了一切。
 
-你可能正在评估五个供应商的产品，试图比较所有这些 Agent。但实际上，你只是在追逐自己的尾巴。
+你可能正在评估多家供应商的产品，试图比较这些 Agent。但这实际上是在做无用功。
 
-构建你自己的太容易了...
+构建属于你自己的 Agent 其实非常简单...
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.023.png)
 
@@ -147,15 +143,15 @@ Cursor, Windsurf, Claude Code, GitHub Copilot, 和 Amp 只是在 LLM token 循�
 
 并非所有 LLM 都是 Agentic（代理式）的。
 
-就像你有不同类型的汽车一样，如果你想越野，你有 [40 系列](https://en.wikipedia.org/wiki/Toyota_Land_Cruiser_(J40))，如果你想运送人，你有载人汽车。
+正如汽车有不同类型——越野时选择 [40 系列](https://en.wikipedia.org/wiki/Toyota_Land_Cruiser_(J40))，载客时选择轿车一样。
 
-同样的原则适用于 LLM，我已经能够将它们的行为映射到一个象限中。
+同样的原则也适用于 LLM，我们可以将它们的行为映射到一个象限中。
 
-> 一个模型要么是高安全性，低安全性，Oracle（预言机），要么是 Agentic。它从来都不是两者兼有或全部。
+> 一个模型要么是高安全性，要么是低安全性；要么是 Oracle（预言机），要么是 Agentic（代理式）。它很难兼顾所有特性。
 
-如果你想做一些安全研究，你会用哪个模型？
+如果你想进行安全研究，你会选择哪个模型？
 
-那是 Grok。那是一个低安全性模型。
+答案是 Grok。那是一个低安全性模型。
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.025.png)
 
@@ -167,22 +163,22 @@ Cursor, Windsurf, Claude Code, GitHub Copilot, 和 Amp 只是在 LLM token 循�
 
 [Claude Sonnet is a small-brained mechanical squirrel of &lt;T&gt;](https://ghuntley.com/cars/)
 
-第一个机器人用来追逐网球。第一个数字机器人追逐工具调用（tool calls）。
+第一个机器人用来追逐网球，而第一个数字机器人则追逐工具调用（tool calls）。
 
-Sonnet 是一只只想做工具调用的机器松鼠。它不会花太多时间思考；它偏向于行动，这就是它成为 Agentic 的原因。Sonnet 专注于逐步获得成功，而不是在采取行动之前每回合思考几分钟。
+Sonnet 就像一只专注于工具调用的机器松鼠。它不会花费过多时间思考，而是偏向于行动，这正是其具备 Agentic 特性的原因。Sonnet 专注于通过逐步行动获得成功，而不是在行动前花费数分钟进行思考。
 
-似乎每天都有新模型推向市场，它们都在相互竞争。但说实话，它们有自己的专长，并开辟了自己的利基市场。
+似乎每天都有新模型推向市场，竞争激烈。但实际上，它们各有所长，并占据了各自的细分市场。
 
-问题是，除非你在亲密层面上使用这些模型，否则你可能没有意识到模型的这些专长，这导致消费者仅根据两个基本原语比较模型：
+问题在于，除非深入使用这些模型，否则你可能无法意识到它们的专长，这导致消费者仅根据两个基本指标来比较模型：
 
 1.  上下文窗口的大小
 2.  成本
 
-这有点像看一辆车，看它是两门还是三门，而忽略了有些车辆是为越野设计的，而另一些是为客运设计的这一事实。
+这好比仅通过车门数量来评价汽车，却忽略了车辆的设计用途是越野还是载客。
 
-要构建一个 Agent，第一步是选择一个高度 Agentic 的模型。目前是 Claude Sonnet 或 Kimi K2。
+构建 Agent 的第一步是选择一个高度 Agentic 的模型。目前的首选是 Claude Sonnet 或 Kimi K2。
 
-现在，你可能会想，“如果你想要更高水平的推理和检查增量松鼠的工作怎么办？”。啊，这很简单。你可以将其他 LLM 作为工具连接到现有的 Agentic LLM 中。这就是我们在 Amp 所做的。
+你可能会问：“如果需要更高水平的推理来检查工作怎么办？”。这很简单。你可以将其他 LLM 作为工具集成到现有的 Agentic LLM 中。这正是我们在 Amp 所采用的方法。
 
 我们称之为 Oracle。Oracle 只是 GPT 作为一个工具连接进来，Claude Sonnet 可以函数调用它来获得指导，检查工作进度，并进行研究/规划。
 
@@ -192,13 +188,13 @@ Amp 的 oracle 只是另一个注册为 Agentic LLM 工具的 LLM，它可以对
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.027.png)
 
-下一个要学习的重要事情是，你应该只将上下文窗口用于一项活动。当你使用 Cursor 或任何这些工具时，必须在每次活动后清除上下文窗口（见下文）。
+下一个关键点是：上下文窗口应仅用于单一活动。当使用 Cursor 或类似工具时，必须在每次活动结束后清除上下文窗口（见下文）。
 
 [autoregressive queens of failure](https://ghuntley.com/gutter/)
 
-LLM 的结果是你分配到草堆中的草堆里的一根针。
+LLM 的输出质量取决于上下文的纯净度。
 
-如果你开始一个 AI 辅助会话来构建后端 API 控制器，然后重用该会话来研究关于猫鼬的事实。那么当你告诉它重新设计网站时，网站最终可能会包含关于你的 API 或猫鼬的事实，或者两者兼有，这也就不足为奇了。
+如果你在一个 AI 辅助会话中构建后端 API 控制器，随后又利用同一会话研究猫鼬。那么，当你要求它重新设计网站时，结果中包含关于 API 或猫鼬的信息也就不足为奇了。
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.028.png)
 
@@ -208,15 +204,15 @@ LLM 的结果是你分配到草堆中的草堆里的一根针。
 
 Sonnet 宣传的上下文窗口是 200k。然而，你不能全部使用它，因为模型需要为系统级提示分配内存。然后 harness（Cursor, Windsurf, Claude Code, Amp）也需要分配一些额外的内存，这意味着你最终大约有 176k 可用 token。
 
-你可能听说过很多关于模型上下文协议（MCP）的事情。它们是当前的热门事物，最简单的思考方式是将它们视为分配给上下文窗口的带有描述的函数，告诉它如何调用该函数。
+你可能听说过模型上下文协议（MCP）。这是当前的热门话题，最简单的理解方式是将它们视为带有描述的函数，分配给上下文窗口，告知模型如何调用。
 
-我观察到的一个常见失败场景是人们安装了过多的 MCP 服务器，或者未能考虑单个 MCP 工具公开的工具数量或所有工具的总上下文窗口分配。
+我观察到一个常见的失败场景：人们安装了过多的 MCP 服务器，或者未能充分考虑单个 MCP 工具公开的工具数量及所有工具的总上下文窗口占用。
 
-有一个尚未被充分理解的基本规则。你分配给上下文窗口的越多，上下文窗口的性能就越差，你的结果就会恶化。
+有一条尚未被充分重视的基本规则：分配给上下文窗口的内容越多，其性能越差，结果也会随之恶化。
 
-避免通过你的 Agent 或 MCP 工具消耗过度分配上下文窗口。很容易陷入仅为 MCP 工具分配额外 76K token 的陷阱，这意味着你只有 100K 可用。
+应避免通过 Agent 或 MCP 工具过度占用上下文窗口。很容易陷入仅为 MCP 工具就分配了额外 76K token 的陷阱，导致可用空间大幅减少。
 
-> 少即是多，伙计们。少即是多。
+> 少即是多。
 
 如果你想了解何时使用 MCP 以及何时不使用，我建议你阅读下面的博客文章。
 
@@ -252,11 +248,11 @@ Sonnet 宣传的上下文窗口是 200k。然而，你不能全部使用它，�
 >
 > **Claude:** `get_weather(Melbourne, Australia)`
 
-Boom！就是这样！
+至此，操作完成。
 
-我们已经将我们的第一个工具注册到模型中，每当我们用关于天气的查询触动潜在空间时，它就会函数调用我们的新工具。
+我们已将第一个工具注册到模型中。每当关于天气的查询触发潜在空间时，模型便会调用这个新工具。
 
-它目前是一个存根工具，但你可以看到它；我们有一个方法，LLM 正在从我们的查询中将参数传递给该方法。
+虽然目前它只是一个存根工具，但原理已清晰可见：我们定义了一个方法，而 LLM 正从查询中提取参数并传递给该方法。
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.031.png)
 
@@ -362,7 +358,7 @@ var ListFilesDefinition = ToolDefinition{
 >
 > **result:** I have a mane but I'm not a lion,I have four legs but I'm not a table,I can gallop but I'm not running,People say I'm disagreeable because I always say "neigh."What am I?
 
-Boom！我们现在有一个读取文件工具和一个列出文件工具，你可以看到它们的函数被调用并从我们的原始提示链接在一起。
+至此，我们已拥有了一个读取文件工具和一个列出文件工具，你可以看到它们的函数被调用并从我们的原始提示链接在一起。
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.035.png)
 
@@ -431,11 +427,11 @@ var BashDefinition = ToolDefinition{
 >
 > **Claude:** Great! The `fizzbuzz.js` file has been created and executed successfully. The output shows:Numbers not divisible by 3 or 5 are printed as is (1, 2, 4, 7, 8, 11, 13, 14, 16, 17, 19)Numbers divisible by 3 (but not 5) print "Fizz" (3, 6, 9, 12, 18)Numbers divisible by 5 (but not 3) print "Buzz" (5, 10, 20)Number 15 prints "FizzBuzz" as it's divisible by both 3 and 5
 
-And voila，我们现在有了一个编码 Agent。是不是在这一点上我们可以抛出一些其他提示说，“嘿，让我们做 FizzBuzz 到 100，它就会工作。”
+至此，我们已拥有了一个编码 Agent。此时，我们可以尝试其他提示，例如“实现 FizzBuzz 计数到 100”，它也能正常工作。
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.039.png)
 
-任何编码 harness 背后的第五个也是最后一个原语是搜索工具。如果我告诉你索引源代码或任何智能都没有魔法呢？
+任何编码 Agent 背后的第五个，也是最后一个原语是搜索工具。如果我告诉你，索引源代码或所谓的智能背后并无魔法呢？
 
 ```go
 var CodeSearchDefinition = ToolDefinition{
@@ -449,7 +445,7 @@ You can search by pattern, file type, or directory.`,
 }
 ```
 
-目前几乎所有可用的编码工具都在底层使用开源的 `ripgrep` 二进制文件。如果你想要更多证据，请参阅下面的两篇博客文章：
+目前几乎所有主流编码工具的底层都使用了开源的 `ripgrep` 二进制文件。如需更多证据，请参阅以下两篇博客文章：
 
 [source code analysis of Amazon Kiro](https://ghuntley.com/amazon-kiro-source-code/)
 
@@ -495,9 +491,9 @@ You can search by pattern, file type, or directory.`,
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.037.png)
 
-从这一点开始的一切都只是调整你的提示的问题。由于时间限制，我们没有深入探讨 harness 提示的概念。Harness 提示是你注册工具的地方。它包含诸如你正在运行的操作系统之类的信息，因此它知道是使用 PowerShell (Windows) 还是 bash (Linux 或 macOS)。
+接下来的工作主要是调整提示词。由于篇幅限制，本文未深入探讨 Harness 提示的概念。Harness 提示是注册工具的地方，它包含诸如操作系统类型等信息，以便 Agent 知道是使用 PowerShell (Windows) 还是 bash (Linux 或 macOS)。
 
-它还包含有关 Agent 应如何操作的说明。我说“应”是因为 LLM 是非确定性的。你可以包含指导，但这只是指导。然而，通过提示评估、调整以及花时间玩模型以了解它们的行为方式，你可以开发出有效的提示。
+它还包含关于 Agent 应如何操作的指令。之所以说“应”，是因为 LLM 具有非确定性。你可以提供指导，但这仅是引导。然而，通过提示评估、调整以及深入了解模型的行为模式，你可以开发出高效的提示。
 
 如果你想看一个完全成熟的编码 Agent 的例子，请访问下面的博客文章：
 
@@ -517,12 +513,12 @@ You can search by pattern, file type, or directory.`,
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.041.png)
 
-回顾一下。你刚刚构建的是一个编码 Agent。也许你不想创建一个编码 Agent。如果你从事数据工程职业怎么办？那会是什么样子？想想你日常做的所有活动，拥有使用这些原语进行自动化的能力对你的雇主来说可能是方便或有价值的。
+回顾一下，你刚刚构建了一个编码 Agent。也许你的目标并非创建一个编码 Agent。如果你是数据工程师，情况会如何？思考一下你的日常活动，拥有利用这些原语进行自动化的能力，对你的雇主而言将极具价值。
 
-你现在的工人将取代你的工作，而不是 AI。
+取代你工作的将是善用 AI 的人，而非 AI 本身。
 
-如果你担心 AI，答案很简单：投资你自己。就这么简单。今年是在个人发展方面睡大觉的一个特别具有挑战性的时期。
+如果你对 AI 感到焦虑，答案很简单：投资自己。今年是个人发展充满挑战的一年，切勿停滞不前。
 
 [the six-month recap: closing talk on AI at Web Directions, Melbourne, June 2025](https://ghuntley.com/six-month-recap/)
 
-> 前进并构建吧。
+> 勇往直前，开始构建吧。
