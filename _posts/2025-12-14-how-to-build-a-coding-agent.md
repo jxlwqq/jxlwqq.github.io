@@ -21,23 +21,23 @@ categories: ai agent
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.002.png)
 
-这并不难
+<p class="text-center">这并不难</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.003.png)
 
-构建一个编码 Agent
+<p class="text-center">构建一个编码 Agent</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.004.png)
 
-只有 300 行代码
+<p class="text-center">只有 300 行代码</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.005.png)
 
-在一个循环中运行
+<p class="text-center">在一个循环中运行</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.006.png)
 
-使用 LLM token，这就是全部。
+<p class="text-center">使用 LLM token，这就是全部。</p>
 
 300 行代码在一个循环中运行，使用 LLM token。你只需要不断向循环中投入 token，然后你就拥有了一个 Agent。
 
@@ -53,27 +53,27 @@ categories: ai agent
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.009.png)
 
-请构建你自己的
+<p class="text-center">请构建你自己的</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.010.png)
 
-因为这些知识
+<p class="text-center">因为这些知识</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.011.png)
 
-将改变你
+<p class="text-center">将改变你</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.012.png)
 
-从消费者
+<p class="text-center">从消费者</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.013.png)
 
-变成生产者
+<p class="text-center">变成生产者</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.014.png)
 
-能够自动化事务
+<p class="text-center">能够自动化事务</p>
 
 科技行业就像一条传送带——我们需要不断学习新事物。
 
@@ -111,27 +111,27 @@ categories: ai agent
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.016.png)
 
-ampcode.com
+<p class="text-center">ampcode.com</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.017.png)
 
-cursor
+<p class="text-center">cursor</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.018.png)
 
-windsurf
+<p class="text-center">windsurf</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.019.png)
 
-claude code
+<p class="text-center">claude code</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.020.png)
 
-github co-pilot
+<p class="text-center">github co-pilot</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.022.png)
 
-都是在 LLM token 循环中运行的代码行。
+<p class="text-center">都是在 LLM token 循环中运行的代码行。</p>
 
 Cursor, Windsurf, Claude Code, GitHub Copilot, 和 Amp 只是在 LLM token 循环中运行的一小部分代码。我怎么强调都不为过。模型在这里完成了所有繁重的工作，伙计们。是模型完成了一切。
 
@@ -202,7 +202,7 @@ LLM 的结果是你分配到草堆中的草堆里的一根针。
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.028.png)
 
-注：自本次研讨会以来，Sonnet 的上下文窗口已增加到 1m。
+<p class="text-center">注：自本次研讨会以来，Sonnet 的上下文窗口已增加到 1m。</p>
 
 上下文窗口非常非常小。最好把它们看作是 Commodore 64，因此，你应该把它当作一台内存有限的计算机。你分配的越多，你的结果和性能就越差。
 
@@ -236,7 +236,7 @@ Sonnet 宣传的上下文窗口是 200k。然而，你不能全部使用它，�
 
 ![Image](/assets/images/how-to-build-a-coding-agent/inference-loop-diagram.png)
 
-推理循环（减去工具注册）
+<p class="text-center">推理循环（减去工具注册）</p>
 
 让我们打开研讨会材料（如下）并通过 `go run chat.go` 运行基本的聊天应用程序：
 
@@ -278,7 +278,7 @@ Boom！就是这样！
 
 ![Image](/assets/images/how-to-build-a-coding-agent/updated-sequence-diagram.png)
 
-这就是最纯粹形式的编码 Agent，没有任何 UI。
+<p class="text-center">这就是最纯粹形式的编码 Agent，没有任何 UI。</p>
 
 由于我们今天不是在制作天气应用程序，让我们换个档次来构建编码 Agent 的第一个原语。
 
