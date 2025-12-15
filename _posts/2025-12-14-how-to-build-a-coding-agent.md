@@ -202,7 +202,7 @@ LLM 的结果是你分配到草堆中的草堆里的一根针。
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.028.png)
 
-<p class="text-center">注：自本次研讨会以来，Sonnet 的上下文窗口已增加到 1m。</p>
+<p class="text-center">注：Sonnet 的上下文窗口已增加到 1m。</p>
 
 上下文窗口非常非常小。最好把它们看作是 Commodore 64，因此，你应该把它当作一台内存有限的计算机。你分配的越多，你的结果和性能就越差。
 
@@ -238,7 +238,7 @@ Sonnet 宣传的上下文窗口是 200k。然而，你不能全部使用它，�
 
 <p class="text-center">推理循环（减去工具注册）</p>
 
-让我们打开研讨会材料（如下）并通过 `go run chat.go` 运行基本的聊天应用程序：
+让我们 Clone 以下这个仓库并通过 `go run chat.go` 运行基本的聊天应用程序：
 
 [GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent)
 
@@ -297,7 +297,7 @@ var ReadFileDefinition = ToolDefinition{
 
 [GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent)
 
-让我们再次打开研讨会材料（上文）并创建一个文件：
+让我们再次在代码仓库根目录，创建一个文件：
 
 ```bash
 cat << EOF
@@ -342,7 +342,7 @@ var ListFilesDefinition = ToolDefinition{
 
 [GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent)
 
-让我们再次打开研讨会材料（上文）并通过 `go run list_files.go` 运行基本的聊天应用程序：
+让我们再次在代码仓库根目录，通过 `go run list_files.go` 运行基本的聊天应用程序：
 
 > **You:** Claude, mate. Is there a `README.md` in this folder? Also what is the contents of `riddle.txt`?
 >
@@ -379,7 +379,7 @@ var BashDefinition = ToolDefinition{
 
 [GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent)
 
-让我们再次打开研讨会材料（上文）并运行 bash 工具：
+让我们再次在代码仓库根目录，运行 bash 工具：
 
 `go run bash_tool.go`
 
@@ -403,7 +403,7 @@ var BashDefinition = ToolDefinition{
 
 [GitHub - ghuntley/how-to-build-a-coding-agent](https://github.com/ghuntley/how-to-build-a-coding-agent)
 
-让我们再次打开研讨会材料（上文）并运行编辑工具：
+让我们再次在代码仓库根目录，运行编辑工具：
 
 `go run edit_file.go`
 
@@ -455,7 +455,7 @@ You can search by pattern, file type, or directory.`,
 
 [from Luddites to AI: the Overton Window of disruption](https://ghuntley.com/overton/)
 
-让我们再次打开研讨会材料并运行代码搜索工具：
+让我们再次在代码仓库根目录，运行代码搜索工具：
 
 `go run code_search_tool.go`
 
