@@ -11,7 +11,7 @@ categories: ai agent
 
 ![how to build a coding agent: free workshop](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.001.jpg)
 
-本文将介绍如何构建一个编码 Agent。“Agent”一词如今已屡见不鲜。
+本文将介绍如何构建一个编码 Agent。「Agent」一词如今已屡见不鲜。
 
 尽管这个术语被频繁提及，但许多人对其确切含义及编码 Agent 的内部运作机制仍缺乏清晰的理解。是时候揭开其神秘面纱，展示其技术门槛并非高不可攀。
 
@@ -91,7 +91,7 @@ categories: ai agent
 
 此刻，你正处于上述旅程的某个阶段。
 
-在左上角，有些人持怀疑态度：“向我证明这不是真的”、“给我看结果”、“证明这不是炒作”，或者认为“这还不够好”。他们被困在悬崖的一侧，完全忽视了在悬崖的另一边，已有人在完全自动化他们的工作职能。
+在左上角，有些人持怀疑态度：「向我证明这不是真的」、「给我看结果」、「证明这不是炒作」，或者认为「这还不够好」。他们被困在悬崖的一侧，完全忽视了在悬崖的另一边，已有人在完全自动化他们的工作职能。
 
 > 在我看来，任何与 AI 相关的颠覆或失业并非 AI 本身所致，而是缺乏个人发展和自我投资的后果。如果你的同事在多个 Agent 之间切换，处理想法，并在会议期间让 Agent 在后台运行，而你却置身事外，那么落后是必然的。
 
@@ -133,7 +133,7 @@ Cursor、Windsurf、Claude Code、GitHub Copilot 和 Amp 只是在 LLM token 循
 
 你可能正在评估多家供应商的产品，试图比较这些 Agent。但这实际上是在做无用功。
 
-构建属于你自己的 Agent 其实非常简单...
+构建属于你自己的 Agent 其实非常简单……
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.023.png)
 
@@ -155,7 +155,7 @@ Cursor、Windsurf、Claude Code、GitHub Copilot 和 Amp 只是在 LLM token 循
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.025.png)
 
-如果你想要“道德一致”的东西，那就是 Anthropic 或 OpenAI。所以那是高安全性。同样，你有 Oracle。Oracle 与 Agentic 截然相反。Oracle 适合总结任务或需要高水平思考的任务。
+如果你想要「道德一致」的东西，那就是 Anthropic 或 OpenAI。所以那是高安全性。同样，你有 Oracle。Oracle 与 Agentic 截然相反。Oracle 适合总结任务或需要高水平思考的任务。
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.026.png)
 
@@ -178,7 +178,7 @@ Sonnet 就像一只专注于工具调用的机器松鼠。它不会花费过多�
 
 构建 Agent 的第一步是选择一个高度 Agentic 的模型。目前的首选是 Claude Sonnet 或 Kimi K2。
 
-你可能会问：“如果需要更高水平的推理来检查工作怎么办？”。这很简单。你可以将其他 LLM 作为工具集成到现有的 Agentic LLM 中。这正是我们在 Amp 所采用的方法。
+你可能会问：「如果需要更高水平的推理来检查工作怎么办？」。这很简单。你可以将其他 LLM 作为工具集成到现有的 Agentic LLM 中。这正是我们在 Amp 所采用的方法。
 
 我们称之为 Oracle。Oracle 只是 GPT 作为一个工具连接进来，Claude Sonnet 可以函数调用它来获得指导，检查工作进度，并进行研究/规划。
 
@@ -198,11 +198,11 @@ LLM 的输出质量取决于上下文的纯净度。
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.028.png)
 
-<p class="text-center">注：Sonnet 的上下文窗口已增加到 1m。</p>
+<p class="text-center">注：Sonnet 的上下文窗口已增加到 1M。</p>
 
 上下文窗口非常非常小。最好把它们看作是 Commodore 64，因此，你应该把它当作一台内存有限的计算机。你分配的越多，你的结果和性能就越差。
 
-Sonnet 宣传的上下文窗口是 200k。然而，你不能全部使用它，因为模型需要为系统级提示分配内存。然后 harness（Cursor, Windsurf, Claude Code, Amp）也需要分配一些额外的内存，这意味着你最终大约有 176k 可用 token。
+Sonnet 宣传的上下文窗口是 200K。然而，你不能全部使用它，因为模型需要为系统级提示分配内存。然后 harness（Cursor, Windsurf, Claude Code, Amp）也需要分配一些额外的内存，这意味着你最终大约有 176K 可用 token。
 
 你可能听说过模型上下文协议（MCP）。这是当前的热门话题，最简单的理解方式是将它们视为带有描述的函数，分配给上下文窗口，告知模型如何调用。
 
@@ -427,7 +427,7 @@ var BashDefinition = ToolDefinition{
 >
 > **Claude:** Great! The `fizzbuzz.js` file has been created and executed successfully. The output shows:Numbers not divisible by 3 or 5 are printed as is (1, 2, 4, 7, 8, 11, 13, 14, 16, 17, 19)Numbers divisible by 3 (but not 5) print "Fizz" (3, 6, 9, 12, 18)Numbers divisible by 5 (but not 3) print "Buzz" (5, 10, 20)Number 15 prints "FizzBuzz" as it's divisible by both 3 and 5
 
-至此，我们已拥有了一个编码 Agent。此时，我们可以尝试其他提示，例如“实现 FizzBuzz 计数到 100”，它也能正常工作。
+至此，我们已拥有了一个编码 Agent。此时，我们可以尝试其他提示，例如「实现 FizzBuzz 计数到 100」，它也能正常工作。
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.039.png)
 
@@ -493,7 +493,7 @@ You can search by pattern, file type, or directory.`,
 
 接下来的工作主要是调整提示词。由于篇幅限制，本文未深入探讨 Harness 提示的概念。Harness 提示是注册工具的地方，它包含诸如操作系统类型等信息，以便 Agent 知道是使用 PowerShell (Windows) 还是 bash (Linux 或 macOS)。
 
-它还包含关于 Agent 应如何操作的指令。之所以说“应”，是因为 LLM 具有非确定性。你可以提供指导，但这仅是引导。然而，通过提示评估、调整以及深入了解模型的行为模式，你可以开发出高效的提示。
+它还包含关于 Agent 应如何操作的指令。之所以说「应」，是因为 LLM 具有非确定性。你可以提供指导，但这仅是引导。然而，通过提示评估、调整以及深入了解模型的行为模式，你可以开发出高效的提示。
 
 如果你想看一个完全成熟的编码 Agent 的例子，请访问下面的博客文章：
 
