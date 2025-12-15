@@ -165,7 +165,7 @@ Cursor, Windsurf, Claude Code, GitHub Copilot, 和 Amp 只是在 LLM token 循�
 
 同时，你有像 Anthropic 这样的提供商，他们的 Claude Sonnet 是一只数字松鼠（见下文）。
 
-[Claude Sonnet is a small-brained mechanical squirrel of <T>](https://ghuntley.com/cars/)
+[Claude Sonnet is a small-brained mechanical squirrel of &lt;T&gt;](https://ghuntley.com/cars/)
 
 第一个机器人用来追逐网球。第一个数字机器人追逐工具调用（tool calls）。
 
