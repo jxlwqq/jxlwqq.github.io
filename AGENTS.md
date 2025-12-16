@@ -36,13 +36,13 @@
 ### 安装依赖
 
 ```bash
-bundle install
+eval "$(rbenv init -)" && bundle install
 ```
 
 ### 启动本地开发服务器
 
 ```bash
-bundle exec jekyll serve
+eval "$(rbenv init -)" && bundle exec jekyll serve
 ```
 
 服务器启动后访问 `http://localhost:4000`
@@ -51,7 +51,7 @@ bundle exec jekyll serve
 
 ```bash
 lsof -ti:4000 | xargs kill -9 2>/dev/null || true
-bundle exec jekyll serve
+eval "$(rbenv init -)" && bundle exec jekyll serve
 ```
 
 ## 写作指南
