@@ -1,4 +1,4 @@
-# 我的博客
+# jxlwqq 的技术博客
 
 这是一个使用 Jekyll 搭建并托管在 GitHub Pages 上的个人博客。
 
@@ -6,48 +6,17 @@
 
 访问 [https://jxlwqq.github.io](https://jxlwqq.github.io) 查看博客。
 
-## 本地运行
+## 推荐文章
 
-1. 安装依赖：
-```bash
-bundle install
-```
+### [如何构建一个编码 Agent](https://jxlwqq.github.io/ai/agent/2025/12/14/how-to-build-a-coding-agent/)
 
-2. 启动本地服务器：
-```bash
-bundle exec jekyll serve
-```
+本文将介绍如何构建一个编码 Agent。「Agent」一词如今已屡见不鲜。尽管这个术语被频繁提及，但许多人对其确切含义及编码 Agent 的内部运作机制仍缺乏清晰的理解。是时候揭开其神秘面纱，展示其技术门槛并非高不可攀。
 
-3. 在浏览器中访问 `http://localhost:4000`
+[全文阅读](https://jxlwqq.github.io/ai/agent/2025/12/14/how-to-build-a-coding-agent/)
 
-## 写文章
+### [从零构建超迷你 ChatGPT：在 DGX Spark 上全流程训练 nanochat](https://jxlwqq.github.io/ai/training/2025/12/05/nanochat-training/)
 
-1. 在 `_posts` 目录下创建新文件
-2. 文件名格式：`YYYY-MM-DD-title.md`
-3. 添加 Front Matter：
+Andrej Karpathy 最近开源了 nanochat 项目，号称花 100 美元就能从零训出一个能聊天的模型。正好手边有台 DGX Spark，于是决定跑一遍完整流程，顺便记录下来。
 
-```yaml
----
-layout: post
-title: "文章标题"
-date: 2025-12-05 10:00:00 +0800
-categories: category1 category2
----
-```
+[全文阅读](https://jxlwqq.github.io/ai/training/2025/12/05/nanochat-training/)
 
-4. 使用 Markdown 编写文章内容
-
-## 部署
-
-将代码推送到 GitHub 仓库的 `master` 或 `main` 分支，GitHub Pages 会自动构建和部署。
-
-## 技术栈
-
-- Jekyll - 静态网站生成器
-- GitHub Pages - 免费托管
-- Markdown - 文章编写
-- Minima - 默认主题
-
-## License
-
-MIT
