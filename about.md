@@ -6,11 +6,7 @@ permalink: /about/
 
 # 关于我
 
-欢迎访问我的个人博客！
-
-## 关于这个博客
-
-这是一个使用 Jekyll 搭建并托管在 GitHub Pages 上的个人博客网站。
+欢迎访问我的个人博客！这是一个使用 Jekyll 搭建并托管在 GitHub Pages 上的个人博客网站。
 
 我会在这里分享：
 
