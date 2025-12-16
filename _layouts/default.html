@@ -13,7 +13,7 @@
         </h3>
         <nav class="masthead-nav">
           {% for page in site.pages %}
-            {% if page.title %}
+            {% if page.title and page.url != "/" and page.url != "/index.html" %}
               <a href="{{ page.url | relative_url }}">{{ page.title }}</a>
             {% endif %}
           {% endfor %}
