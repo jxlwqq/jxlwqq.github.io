@@ -2,7 +2,7 @@
 layout: post
 title:  "从零构建超迷你 ChatGPT：在 DGX Spark 上全流程训练 nanochat"
 date:   2025-12-05 12:00:00 +0800
-categories: ai LLM-training DGX-Spark
+categories: ai llm-training dgx-spark
 ---
 
 * TOC
