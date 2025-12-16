@@ -1,0 +1,77 @@
+---
+layout: default
+title: 首页
+---
+
+<ul>
+  {% for post in paginator.posts %}
+    <li>
+      <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+      <span style="color: #666; font-size: 0.8em;"> - {{ post.date | date: "%Y-%m-%d" }}</span>
+    </li>
+  {% endfor %}
+</ul>
+
+<div class="pagination">
+  {% assign trail = 2 %}
+  {% assign page = paginator.page %}
+  {% assign total = paginator.total_pages %}
+
+  <!-- Previous -->
+  {% if paginator.previous_page %}
+    <a class="pagination-item" href="{{ paginator.previous_page_path | relative_url }}">&laquo;</a>
+  {% else %}
+    <span class="pagination-item disabled">&laquo;</span>
+  {% endif %}
+
+  <!-- First Page -->
+  {% if page == 1 %}
+    <span class="pagination-item active">1</span>
+  {% else %}
+    <a class="pagination-item" href="{{ '/' | relative_url }}">1</a>
+  {% endif %}
+
+  <!-- Ellipsis Start -->
+  {% assign start_threshold = trail | plus: 2 %}
+  {% if page > start_threshold %}
+    <span class="pagination-item disabled">...</span>
+  {% endif %}
+
+  <!-- Middle Pages -->
+  {% for p in (2..total) %}
+    {% if p < total %}
+      {% assign diff = p | minus: page %}
+      {% if diff < 0 %}{% assign diff = diff | times: -1 %}{% endif %}
+      
+      {% if diff <= trail %}
+        {% if p == page %}
+          <span class="pagination-item active">{{ p }}</span>
+        {% else %}
+          <a class="pagination-item" href="{{ site.baseurl }}/page{{ p }}/">{{ p }}</a>
+        {% endif %}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+
+  <!-- Ellipsis End -->
+  {% assign end_threshold = total | minus: trail | minus: 1 %}
+  {% if page < end_threshold %}
+    <span class="pagination-item disabled">...</span>
+  {% endif %}
+
+  <!-- Last Page -->
+  {% if total > 1 %}
+    {% if page == total %}
+      <span class="pagination-item active">{{ total }}</span>
+    {% else %}
+      <a class="pagination-item" href="{{ site.baseurl }}/page{{ total }}/">{{ total }}</a>
+    {% endif %}
+  {% endif %}
+
+  <!-- Next -->
+  {% if paginator.next_page %}
+    <a class="pagination-item" href="{{ paginator.next_page_path | relative_url }}">&raquo;</a>
+  {% else %}
+    <span class="pagination-item disabled">&raquo;</span>
+  {% endif %}
+</div>

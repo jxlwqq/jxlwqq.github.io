@@ -32,11 +32,23 @@
 }
 
 // Meta data line below post title
-.post-date {
-  display: block;
+.post-meta {
   margin-top: -.5rem;
   margin-bottom: var(--spacer);
   color: var(--gray-600);
+  font-size: 0.9rem;
+
+  a {
+    color: inherit;
+    text-decoration: none;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.post-date {
+  display: inline-block;
 }
 
 

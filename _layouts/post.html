@@ -9,6 +9,14 @@ layout: default
     {% if page.author %}
       <span class="post-author"> · {{ page.author }}</span>
     {% endif %}
+    {% if page.categories.size > 0 %}
+      <span class="post-categories">
+        · 
+        {% for category in page.categories %}
+          <a href="{{ site.baseurl }}/categories/#{{ category | slugify }}">{{ category }}</a>{% unless forloop.last %}, {% endunless %}
+        {% endfor %}
+      </span>
+    {% endif %}
   </div>
   {{ content }}
 </article>

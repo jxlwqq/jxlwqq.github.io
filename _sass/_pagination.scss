@@ -5,48 +5,40 @@
 
 .pagination {
   display: flex;
-  margin: 0 -1.5rem var(--spacer);
-  color: var(--gray-500);
-  text-align: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: var(--spacer-3) 0;
+  list-style: none;
+  padding: 0;
 }
 
 // Pagination items can be `span`s or `a`s
 .pagination-item {
   display: block;
-  padding: var(--spacer);
+  padding: 0.5rem 0.75rem;
+  margin: 0 0.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
   text-decoration: none;
-  border: solid var(--border-color);
-  border-width: 1px 0;
+  color: var(--gray-600);
 
-  &:first-child {
-    margin-bottom: -1px;
+  &:hover {
+    background-color: var(--border-color);
   }
-}
 
-// Only provide a hover state for linked pagination items
-a.pagination-item:hover {
-  background-color: var(--border-color);
+  &.active {
+    background-color: var(--gray-800);
+    color: #fff;
+    border-color: var(--gray-800);
+  }
+
+  &.disabled {
+    color: var(--gray-300);
+    pointer-events: none;
+    border-color: var(--gray-100);
+  }
 }
 
 @media (min-width: 30em) {
-  .pagination {
-    margin: var(--spacer-3) 0;
-  }
-
-  .pagination-item {
-    float: left;
-    width: 50%;
-    border-width: 1px;
-
-    &:first-child {
-      margin-bottom: 0;
-      border-top-left-radius: var(--border-radius);
-      border-bottom-left-radius: var(--border-radius);
-    }
-    &:last-child {
-      margin-left: -1px;
-      border-top-right-radius: var(--border-radius);
-      border-bottom-right-radius: var(--border-radius);
-    }
-  }
+  // Removed specific styles for larger screens as the flex layout works well
 }

@@ -9,7 +9,7 @@ markdown: kramdown
 # theme: jekyll-theme-hacker # Removed for Poole theme
 
 # Poole Settings
-paginate: 5
+paginate: 20
 permalink: pretty
 
 plugins:
