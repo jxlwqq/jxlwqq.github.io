@@ -2,7 +2,7 @@
 layout: post
 title: "如何构建一个编码 Agent"
 date: 2025-12-14 12:00:00 +0800
-categories: ai agent
+categories: ai coding-agent
 ---
 
 > 原文链接：[How to build a coding agent: free workshop](https://ghuntley.com/agent/)
