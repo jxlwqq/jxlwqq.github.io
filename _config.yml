@@ -10,7 +10,7 @@ markdown: kramdown
 
 # Poole Settings
 paginate: 20
-permalink: pretty
+permalink: /:year/:month/:day/:title/
 
 plugins:
   - jekyll-feed
