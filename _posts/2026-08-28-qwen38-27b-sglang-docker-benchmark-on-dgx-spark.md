@@ -77,7 +77,7 @@ SGLang 官方 cookbook 给出了 Qwen3.8-27B 在 DGX Spark 上的完整启动配
 
 * EAGLE 带来的加速：NVFP4 上 **1.8~2.1×**，BF16 上 **2.3~2.7×**（8K 处收益最大）。服务端统计的平均接受长度：NVFP4 2.69/4 步，BF16 2.85/4 步。
 * NVFP4 对 BF16 的加速：关闭推测解码时 **2.9×**，开启后 **2.1×**（EAGLE 摊薄了读取权重的开销，量化优势被部分抹平）。
-* 带宽模型验证：273GB/s ÷ 21GB ≈ 13 tok/s（NVFP4 理论上限），273GB/s ÷ 52.9GB ≈ 5.2 tok/s（BF16），与实测 12.0 和 4.15~4.87 基本吻合——**单流 decode 就是权重带宽的物理极限**，与此前另一份 GB10 测速报告"~23 tok/s 天花板"（NVFP4+NEXTN 达 23.02）的结论一致，本文同配方实测 23.7~25.5。
+* 带宽模型验证：273GB/s ÷ 21GB ≈ 13 tok/s（NVFP4 理论上限），273GB/s ÷ 52.9GB ≈ 5.2 tok/s（BF16），与实测 12.0 和 4.15~4.87 基本吻合——**单流 decode 就是权重带宽的物理极限**，与此前[另一份 GB10 测速报告](https://developer.aliyun.com/article/1756323)"~23 tok/s 天花板"（NVFP4+NEXTN 达 23.02）的结论一致，本文同配方实测 23.7~25.5。
 
 ### 5.2 TTFT 与 Prefill
 
@@ -131,8 +131,3 @@ NVFP4 把 31GB 的权重差省下来给了 KV 池：同等 `mem-fraction` 下可
 * 推测解码未显式设置 `--max-running-requests` 时会被固定为 48，关闭推测后本机自动算出 79——做并发压测前先确认这个隐含上限。
 * 官方 cookbook 对 DGX Spark 的 48 格矩阵只做了 boot-and-serve 验证（ISL 8192 / OSL 1024、并发 1，无吞吐数据）；RTX 5090 / RTX PRO 6000 才有完整性能数字，本文数据可用于填补 DGX Spark 这一格。
 * 镜像 `lmsysorg/sglang:qwen38-27b`（sglang g561c8f3 + flashinfer 0.6.18）满足 MTP + FlashInfer 对 uniform_q_len 的版本要求，无需退回 triton 后端。
-
-## 参考
-
-* [SGLang Cookbook: Qwen3.8-27B](https://docs.sglang.io/cookbook/autoregressive/Qwen/Qwen3.8-27B)（官方部署配方与 DGX Spark 验证说明）
-* [Qwen3.8-27B 部署测速报告（GB10 / DGX Spark）- 阿里云开发者社区](https://developer.aliyun.com/article/1756323)（同硬件、同配方家族的第三方数据，单流 23.02 tok/s）
