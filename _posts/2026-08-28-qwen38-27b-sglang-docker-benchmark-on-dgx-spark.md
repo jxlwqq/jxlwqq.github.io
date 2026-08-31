@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Qwen3.8-27B SGLang Docker 部署测速报告（GB10 / DGX Spark）：NVFP4 vs BF16 × EAGLE 开关"
+title: "Qwen3.8-27B SGLang Docker 部署测速报告（GB10 / DGX Spark）"
 date: 2026-08-28 12:00:00 +0800
 categories: ai dgx-spark sglang llm-inference benchmark qwen
 ---
