@@ -8,6 +8,12 @@
 
 ## 推荐文章
 
+### [LLM 的「误刹」：复杂任务中模型为何过早宣布完成](https://jxlwqq.github.io/2026/09/04/how-llms-prematurely-declare-done/)
+
+任务还没做完，模型却自信地写下了「所有测试已通过 ✅」。《LLM 的「刹车」》姊妹篇：拆解过早终止的五个成因——从 SFT 数据里的「完成文体」、局部完整的误判，到 RLHF 的自信偏好——并给出协议层、上下文工程与模型层的对应对策。
+
+[全文阅读](https://jxlwqq.github.io/2026/09/04/how-llms-prematurely-declare-done/)
+
 ### [LLM 的「刹车」：下一个 Token 预测机如何知道何时停止](https://jxlwqq.github.io/2026/09/04/how-llm-knows-when-to-stop/)
 
 大语言模型的本质是一台下一个 Token 预测机——每一步它能做的唯一事情，就是从词表里再挑出一个 Token，「不输出」根本不在选项里。那么，终止的信号是从哪一步、以什么形式冒出来的？本文结合 nanochat 源码，拆解模型层、协议层与运行时层如何协作，让一台永不停歇的预测机知道何时停止。
