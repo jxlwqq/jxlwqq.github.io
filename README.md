@@ -20,6 +20,12 @@
 
 [全文阅读](https://jxlwqq.github.io/2026/09/04/how-llm-knows-when-to-stop/)
 
+### [Qwen3.8-27B SGLang Docker 部署测速报告（GB10 / DGX Spark）](https://jxlwqq.github.io/2026/08/28/qwen38-27b-sglang-docker-benchmark-on-dgx-spark/)
+
+SGLang 官方 cookbook 验证过 Qwen3.8-27B 在 DGX Spark 上「能启动、能服务」，但没有给出任何吞吐数据。本文用实际的 Docker 部署 + curl 流式调用补上这块空白：两个 checkpoint（NVFP4 量化 / BF16 原版）× 两种推测解码（EAGLE 开 / 关），共 4 组配置，覆盖三种输入规模和 4 路并发。
+
+[全文阅读](https://jxlwqq.github.io/2026/08/28/qwen38-27b-sglang-docker-benchmark-on-dgx-spark/)
+
 ### [如何构建一个编码 Agent](https://jxlwqq.github.io/2025/12/14/how-to-build-a-coding-agent/)
 
 本文将介绍如何构建一个编码 Agent。「Agent」一词如今已屡见不鲜。尽管这个术语被频繁提及，但许多人对其确切含义及编码 Agent 的内部运作机制仍缺乏清晰的理解。是时候揭开其神秘面纱，展示其技术门槛并非高不可攀。
