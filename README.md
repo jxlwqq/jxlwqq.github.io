@@ -8,6 +8,12 @@
 
 ## 推荐文章
 
+### [LLM 的「刹车」：下一个 Token 预测机如何知道何时停止](https://jxlwqq.github.io/2026/09/04/how-llm-knows-when-to-stop/)
+
+大语言模型的本质是一台下一个 Token 预测机，这个循环本身没有任何内在的终点——它凭什么有一天会输出「没有下一个 Token 了」？本文结合 nanochat 源码，拆解模型层、协议层与运行时层如何协作，让一台永不停歇的预测机知道何时停止。
+
+[全文阅读](https://jxlwqq.github.io/2026/09/04/how-llm-knows-when-to-stop/)
+
 ### [如何构建一个编码 Agent](https://jxlwqq.github.io/2025/12/14/how-to-build-a-coding-agent/)
 
 本文将介绍如何构建一个编码 Agent。「Agent」一词如今已屡见不鲜。尽管这个术语被频繁提及，但许多人对其确切含义及编码 Agent 的内部运作机制仍缺乏清晰的理解。是时候揭开其神秘面纱，展示其技术门槛并非高不可攀。
