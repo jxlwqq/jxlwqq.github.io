@@ -3,11 +3,22 @@ layout: default
 title: 首页
 ---
 
-<ul>
+<ul class="post-list">
   {% for post in paginator.posts %}
     <li>
-      <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
-      <span style="color: #666; font-size: 0.8em;"> - {{ post.date | date: "%Y-%m-%d" }}</span>
+      <a class="post-item" href="{{ post.url | relative_url }}">
+        <span class="post-item-head">
+          <time class="post-item-date" datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%Y-%m-%d" }}</time>
+          <span class="post-item-title">{{ post.title }}</span>
+        </span>
+        {% assign desc = post.excerpt | strip_html | strip %}
+        {% if desc == "" or desc == nil %}
+          {% assign desc = post.content | remove_first: "* TOC" | remove_first: "{:toc}" | strip_html | strip %}
+        {% endif %}
+        {% if desc != "" and desc != nil %}
+          <span class="post-item-desc">{{ desc | truncate: 110 }}</span>
+        {% endif %}
+      </a>
     </li>
   {% endfor %}
 </ul>
@@ -42,7 +53,7 @@ title: 首页
     {% if p < total %}
       {% assign diff = p | minus: page %}
       {% if diff < 0 %}{% assign diff = diff | times: -1 %}{% endif %}
-      
+
       {% if diff <= trail %}
         {% if p == page %}
           <span class="pagination-item active">{{ p }}</span>

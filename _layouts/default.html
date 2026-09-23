@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 
   {% include head.html %}
 
@@ -9,10 +9,10 @@
       <header class="masthead">
         <h3 class="masthead-title">
           <a href="{{ site.baseurl }}/" title="Home">{{ site.title }}</a>
-          <small>{{ site.tagline }}</small>
         </h3>
         <nav class="masthead-nav">
-          {% for page in site.pages %}
+          {% assign nav_pages = site.pages | sort: "title" %}
+          {% for page in nav_pages %}
             {% if page.title and page.url != "/" and page.url != "/index.html" %}
               <a href="{{ page.url | relative_url }}">{{ page.title }}</a>
             {% endif %}
@@ -25,9 +25,16 @@
       </main>
 
       <footer class="footer">
-        <small>
-          &copy; <time datetime="{{ site.time | date_to_xmlschema }}">{{ site.time | date: '%Y' }}</time>. All rights reserved.
-        </small>
+        <div class="footer-inner">
+          <small>
+            &copy; <time datetime="{{ site.time | date_to_xmlschema }}">{{ site.time | date: '%Y' }}</time> {{ site.author.name }}
+          </small>
+          <nav class="footer-nav">
+            <a href="{{ 'feed.xml' | relative_url }}">RSS</a>
+            <a href="https://github.com/{{ site.author.name }}">GitHub</a>
+            <a href="mailto:{{ site.author.email }}">Email</a>
+          </nav>
+        </div>
       </footer>
     </div>
 

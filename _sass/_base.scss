@@ -15,16 +15,21 @@ body {
   background-color: var(--body-bg);
   -webkit-text-size-adjust: 100%;
       -ms-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
 }
 
-// No `:visited` state is required by default (browsers will use `a`)
+// Subtle dark underlines on body links, like the reference theme
 a {
   color: var(--link-color);
+  text-decoration-color: var(--link-underline-color);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
 
-  // `:focus` is linked to `:hover` for basic accessibility
   &:hover,
   &:focus {
     color: var(--link-hover-color);
+    text-decoration-color: currentColor;
   }
 
   strong {
@@ -40,15 +45,16 @@ img {
 }
 
 table {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   width: 100%;
   border: 0 solid var(--border-color);
   border-collapse: collapse;
+  font-size: .9375rem;
 }
 
 td,
 th {
-  padding: .25rem .5rem;
+  padding: .375rem .5rem;
   border-color: inherit;
   border-style: solid;
   border-width: 0;
@@ -57,6 +63,7 @@ th {
 
 th {
   text-align: left;
+  color: var(--text-strong);
 }
 
 thead th {
@@ -65,8 +72,14 @@ thead th {
 
 mark {
   padding: .15rem;
-  background-color: var(--yellow-100);
+  background-color: rgba(250, 204, 21, .25);
+  color: inherit;
   border-radius: .125rem;
+}
+
+::selection {
+  background-color: rgba(255, 255, 255, .85);
+  color: #000;
 }
 
 .text-center {

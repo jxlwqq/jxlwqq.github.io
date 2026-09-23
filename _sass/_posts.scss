@@ -1,7 +1,7 @@
 // Posts and pages
 //
-// Each post is wrapped in `.post` and is used on default and post layouts. Each
-// page is wrapped in `.page` and is only used on the page layout.
+// Article pages: 24px semibold title, muted meta line.
+// Blog index: date + title on one line, muted description aligned under the title.
 
 .page,
 .post {
@@ -15,12 +15,14 @@
 // Blog post or page title
 .page-title,
 .post-title {
-  color: var(--heading-color);
-}
-.page-title,
-.post-title {
   margin-top: 0;
+  color: var(--heading-color);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.35;
 }
+
 .post-title a {
   color: inherit;
   text-decoration: none;
@@ -28,52 +30,214 @@
   &:hover,
   &:focus {
     text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
   }
 }
 
 // Meta data line below post title
 .post-meta {
-  margin-top: -.5rem;
-  margin-bottom: var(--spacer);
-  color: var(--gray-600);
-  font-size: 0.9rem;
+  margin-top: -.25rem;
+  margin-bottom: var(--spacer-2);
+  color: var(--text-muted);
+  font-size: .875rem;
 
   a {
     color: inherit;
     text-decoration: none;
+
     &:hover {
       text-decoration: underline;
+      text-underline-offset: 3px;
     }
   }
 }
 
 .post-date {
   display: inline-block;
+  font-variant-numeric: tabular-nums;
 }
 
 
-// Related posts
+// Blog index list
+
+.post-list {
+  padding: 0;
+  margin: 0 0 var(--spacer-3);
+  list-style: none;
+}
+
+.post-item {
+  display: block;
+  padding: .375rem 0;
+  margin-bottom: 1.25rem;
+  text-decoration: none;
+}
+
+.post-item-head {
+  display: flex;
+  align-items: baseline;
+}
+
+.post-item-date {
+  flex: 0 0 6.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.post-item-title {
+  color: var(--text-strong);
+  letter-spacing: -0.01em;
+
+  .post-item:hover & {
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+  }
+}
+
+.post-item-desc {
+  margin: .25rem 0 0;
+  color: var(--text-muted);
+  font-size: .875rem;
+  line-height: 1.45;
+}
+
+@media (min-width: 40rem) {
+  .post-item-desc {
+    padding-left: 7.25rem; // align with the title column
+  }
+}
+
+
+// Prev/next navigation after a post
+
+.post-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: var(--spacer-3);
+  padding-top: var(--spacer);
+  border-top: 1px solid var(--border-color);
+}
+
+.post-nav-link {
+  display: flex;
+  flex-direction: column;
+  max-width: 48%;
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: .9375rem;
+  line-height: 1.4;
+
+  .post-nav-direction {
+    margin-bottom: .125rem;
+    color: var(--text-muted);
+    font-size: .8125rem;
+  }
+
+  &:hover .post-nav-title {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  &.next {
+    margin-left: auto;
+    text-align: right;
+  }
+}
+
+// Related posts (legacy aside, kept for compatibility)
 .related {
   padding-top: var(--spacer-2);
   padding-bottom: var(--spacer-2);
   margin-bottom: var(--spacer-2);
   border-top: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
+
+  h3 {
+    margin-top: 0;
+    font-size: 1rem;
+  }
 }
 
 .related-posts {
   padding-left: 0;
   list-style: none;
 
-  h3 {
-    margin-top: 0;
-  }
-
   a {
     text-decoration: none;
 
     small {
-      color: var(--gray-600);
+      color: var(--text-muted);
     }
+  }
+}
+
+
+// Categories page
+
+.category-heading {
+  margin-top: 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.category-list {
+  padding: 0;
+  margin: 0 0 1rem;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: .375rem;
+  }
+
+  .post-item-date {
+    flex-basis: 6.75rem;
+  }
+
+  a {
+    color: var(--text-color);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+
+// Site footer
+
+.footer {
+  padding-top: var(--spacer);
+  border-top: 1px solid var(--border-color);
+}
+
+.footer-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .5rem;
+  color: var(--text-muted);
+  font-size: .875rem;
+
+  a {
+    color: var(--text-muted);
+
+    &:hover {
+      color: var(--text-strong);
+    }
+  }
+}
+
+.footer-nav {
+  a + a {
+    margin-left: .875rem;
   }
 }

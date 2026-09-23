@@ -1,29 +1,39 @@
 // Code
 //
-// Inline and block-level code snippets. Includes tweaks to syntax highlighted
-// snippets from Pygments/Rouge and Gist embeds.
+// Inline code renders as bordered chips (no background); code blocks sit on a
+// slightly raised dark surface.
 
 code,
 pre {
   font-family: var(--code-font);
 }
 
-code {
-  font-size: 85%;
+// Inline code
+:not(pre) > code {
+  padding: .125rem .3rem;
+  font-size: .875em;
+  color: var(--text-color);
+  background-color: transparent;
+  border: 1px solid var(--gray-400);
+  border-radius: .5rem;
+  word-break: break-word;
 }
 
 pre {
   display: block;
   margin-top: 0;
-  margin-bottom: var(--spacer-3);
+  margin-bottom: var(--spacer-2);
   overflow: auto;
+  font-size: .8125rem;
+  line-height: 1.6;
 }
 
 .highlight {
   padding: var(--spacer);
-  margin-bottom: var(--spacer);
+  margin-bottom: var(--spacer-2);
   background-color: var(--code-bg);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--code-border);
+  border-radius: .75rem;
 
   pre {
     margin-bottom: 0;
@@ -32,6 +42,7 @@ pre {
   // Triple backticks (code fencing) doubles the .highlight elements
   .highlight {
     padding: 0;
+    border: 0;
   }
 }
 
