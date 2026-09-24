@@ -21,6 +21,47 @@
   <!-- Mermaid JS for diagrams -->
   <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
   <script>
+    // Posts may carry light classDef fills from light-theme diagrams; pick
+    // label color per node from the actual fill luminance so light nodes get
+    // dark text and dark nodes keep light text.
+    function fixMermaidContrast() {
+      function luminance(color) {
+        var r, g, b;
+        var hex = /#([0-9a-f]{3,8})\s*$/i.exec(color);
+        if (hex) {
+          var h = hex[1];
+          if (h.length <= 4) {
+            r = parseInt(h[0] + h[0], 16); g = parseInt(h[1] + h[1], 16); b = parseInt(h[2] + h[2], 16);
+          } else {
+            r = parseInt(h.slice(0, 2), 16); g = parseInt(h.slice(2, 4), 16); b = parseInt(h.slice(4, 6), 16);
+          }
+        } else {
+          var rgb = /rgba?\(([^)]+)\)/.exec(color);
+          if (!rgb) return 0;
+          var parts = rgb[1].split(/[,\s\/]+/).filter(Boolean).map(parseFloat);
+          r = parts[0]; g = parts[1]; b = parts[2];
+        }
+        if ([r, g, b].some(function(v) { return isNaN(v); })) return 0;
+        return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      }
+      document.querySelectorAll('.mermaid svg').forEach(function(svg) {
+        svg.querySelectorAll('g.node').forEach(function(node) {
+          var shape = node.querySelector('rect, polygon, path, circle, ellipse');
+          var lum = 0;
+          if (shape) {
+            lum = luminance(shape.getAttribute('fill') || getComputedStyle(shape).fill || '');
+          }
+          var color = lum > 0.55 ? '#1f2328' : '#e5e5e5';
+          node.querySelectorAll('.nodeLabel, .label, span, div, p, text').forEach(function(el) {
+            el.style.color = color;
+            if (el.tagName.toLowerCase() === 'text') {
+              el.setAttribute('fill', color);
+              el.style.fill = color;
+            }
+          });
+        });
+      });
+    }
     document.addEventListener("DOMContentLoaded", function() {
       mermaid.initialize({
         startOnLoad: false,
@@ -44,7 +85,12 @@
         div.textContent = codeBlock.textContent;
         pre.parentNode.replaceChild(div, pre);
       });
-      mermaid.run();
+      var run = mermaid.run();
+      if (run && typeof run.then === 'function') {
+        run.then(fixMermaidContrast).catch(fixMermaidContrast);
+      } else {
+        setTimeout(fixMermaidContrast, 1200);
+      }
     });
   </script>
 
