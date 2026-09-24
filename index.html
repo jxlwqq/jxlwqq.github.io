@@ -7,16 +7,21 @@ title: 首页
   {% for post in paginator.posts %}
     <li>
       <a class="post-item" href="{{ post.url | relative_url }}">
-        <span class="post-item-head">
+        <div class="post-item-head">
           <time class="post-item-date" datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%Y-%m-%d" }}</time>
-          <span class="post-item-title">{{ post.title }}</span>
-        </span>
+          <div class="post-item-main">
+            <span class="post-item-title">{{ post.title }}</span>
+            {% if post.categories.size > 0 %}
+              <span class="post-item-cats">{% for category in post.categories limit:3 %}{{ category }}{% unless forloop.last %} · {% endunless %}{% endfor %}</span>
+            {% endif %}
+          </div>
+        </div>
         {% assign desc = post.excerpt | strip_html | strip %}
         {% if desc == "" or desc == nil %}
           {% assign desc = post.content | remove_first: "* TOC" | remove_first: "{:toc}" | strip_html | strip %}
         {% endif %}
         {% if desc != "" and desc != nil %}
-          <span class="post-item-desc">{{ desc | truncate: 110 }}</span>
+          <div class="post-item-desc">{{ desc | truncate: 110 }}</div>
         {% endif %}
       </a>
     </li>

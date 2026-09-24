@@ -69,44 +69,75 @@
 
 .post-item {
   display: block;
-  padding: .375rem 0;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
   text-decoration: none;
 }
 
+// Date stacks above the title on mobile, sits in a fixed left column on
+// desktop; description padding must match date width + gap (7.25rem).
 .post-item-head {
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
 }
 
 .post-item-date {
-  flex: 0 0 6.75rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
+.post-item-main {
+  display: block;
+}
+
 .post-item-title {
+  display: block;
   color: var(--text-strong);
   letter-spacing: -0.01em;
+}
 
-  .post-item:hover & {
-    text-decoration: underline;
-    text-decoration-thickness: 1.5px;
-    text-underline-offset: 3px;
-  }
+.post-item-cats {
+  display: block;
+  margin-top: .125rem;
+  color: var(--text-muted);
+  font-size: .8125rem;
+  line-height: 1.4;
 }
 
 .post-item-desc {
+  display: block;
   margin: .25rem 0 0;
   color: var(--text-muted);
   font-size: .875rem;
   line-height: 1.45;
 }
 
+.post-item:hover {
+  .post-item-title {
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+  }
+}
+
 @media (min-width: 40rem) {
+  .post-item-head {
+    flex-direction: row;
+    column-gap: .5rem;
+    align-items: baseline;
+  }
+
+  .post-item-date {
+    flex: 0 0 6.75rem;
+  }
+
+  .post-item-main {
+    flex: 1;
+    min-width: 0;
+  }
+
   .post-item-desc {
-    padding-left: 7.25rem; // align with the title column
+    padding-left: 7.25rem; // date column (6.75rem) + gap (.5rem)
   }
 }
 
