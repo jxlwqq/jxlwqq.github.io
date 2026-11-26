@@ -36,7 +36,7 @@ SGLang 官方 cookbook 给出了 Qwen3.8-27B 在 DGX Spark 上的完整启动配
 
 * 术语澄清：被开关的技术是**推测解码（Speculative Decoding）**；EAGLE 是 SGLang 中该技术的算法实现，NEXTN 是它的旧名/别名（cookbook 明确两者等价）；而 **MTP 头不是算法本身，是 checkpoint 内置的草稿权重**——EAGLE 运行时用它充当草稿模型，一次猜多个 token、主模型一次前向并行验证，因此无需单独下载 draft checkpoint（BF16 checkpoint 加载时能看到单独的 `Qwen3_5ForCausalLMMTP`，约 4.9GB）。"关闭推测解码"即回到逐 token 的纯自回归解码。
 * `--mem-fraction-static 0.85` 在 DGX Spark 上有 earlyoom 风险（cookbook 的 48 格矩阵中 15 格在 0.85 被系统 OOM 守护进程以 -15 杀掉），官方 DGX Spark 配方定在 **0.80**。本文 NVFP4 组沿用本机 Makefile 默认 0.85（实测多次启停稳定），BF16 组按官方建议用 0.80。
-* 开启推测解码时若不显式设置 `--max-running-requests`，SGLang 会固定为 48（本机实测 NVFP4+EAGLE = 48，关闭推测后按显存自动算出 79）。
+* 开启推测解码时若不显式设置 `--max-running-requests`，SGLang 会把上限压到 48（显存不足时还会进一步下调，如本机实测 NVFP4+EAGLE = 48、BF16+EAGLE = 32；关闭推测后按显存自动算出 NVFP4 = 79、BF16 = 39）。
 
 ## 3. 模型文件
 
@@ -102,7 +102,7 @@ SGLang 官方 cookbook 给出了 Qwen3.8-27B 在 DGX Spark 上的完整启动配
 | BF16 | 4.76~4.83 | 17.6 |
 
 * 最意外的结果：**NVFP4 + EAGLE 在 4 并发下单路速度几乎不掉**（24.9 vs 单流 23.7），推测解码的 draft/verify 随 batch 摊销得很好；聚合吞吐达到单流的 3.5×。
-* BF16 关闭推测解码时批处理几乎"免费"：每路 4.8 ≈ 单流 4.85，聚合约线性扩展（17.6 ≈ 4.15 × 4.2）——纯带宽瓶颈下多路只是把权重读取摊给更多请求。
+* BF16 关闭推测解码时批处理几乎"免费"：每路 4.8 ≈ 单流 4.85，4 路聚合达 17.6 tok/s（接近线性扩展，相对单流 8K 的 4.15 甚至达 4.2×）——纯带宽瓶颈下多路只是把权重读取摊给更多请求。
 * 对照 cookbook 的警告：推测解码会把 `max-running-requests` 重置为 48，本机 NVFP4+EAGLE 实测 KV 池 37.5 万 token、上限 48 路，4 并发只用了 KV 池的 2%。
 
 ### 5.4 内存与 KV 池
@@ -111,7 +111,7 @@ SGLang 官方 cookbook 给出了 Qwen3.8-27B 在 DGX Spark 上的完整启动配
 |---|---|---|---|
 | NVFP4 + EAGLE | 21G | 374,793 | 48（spec 固定） |
 | NVFP4 | 21G | **413,359** | 79（自动） |
-| BF16 + EAGLE | 52G + 4.9G（MTP） | 174,718 | 32 |
+| BF16 + EAGLE | 52G（含 4.9G MTP） | 174,718 | 32 |
 | BF16 | 52G | 204,597 | 39（自动） |
 
 NVFP4 把 31GB 的权重差省下来给了 KV 池：同等 `mem-fraction` 下可用上下文容量是 BF16 的约 2 倍（41.3 万 vs 20.5 万 token，均远超模型原生的 262K 上下文）。
@@ -128,6 +128,6 @@ NVFP4 把 31GB 的权重差省下来给了 KV 池：同等 `mem-fraction` 下可
 
 * `nvidia-smi` 在 GB10 上显存栏是 Not Supported（统一内存），判断能否再起一个容器要看 `/proc/meminfo` 的 MemAvailable，而不是 nvidia-smi。
 * `--mem-fraction-static 0.85` + BF16 是 earlyoom 高危组合（cookbook 实测 15/48 格被杀，exit -15 无 traceback），DGX Spark 上建议 0.80；本文 NVFP4@0.85 多次启停未复现被杀。
-* 推测解码未显式设置 `--max-running-requests` 时会被固定为 48，关闭推测后本机自动算出 79——做并发压测前先确认这个隐含上限。
+* 推测解码未显式设置 `--max-running-requests` 时上限会被压到 48（显存不足时会更低，如 BF16+EAGLE 为 32；关闭推测后 NVFP4 本机自动算出 79）——做并发压测前先确认这个隐含上限。
 * 官方 cookbook 对 DGX Spark 的 48 格矩阵只做了 boot-and-serve 验证（ISL 8192 / OSL 1024、并发 1，无吞吐数据）；RTX 5090 / RTX PRO 6000 才有完整性能数字，本文数据可用于填补 DGX Spark 这一格。
 * 镜像 `lmsysorg/sglang:qwen38-27b`（sglang g561c8f3 + flashinfer 0.6.18）满足 MTP + FlashInfer 对 uniform_q_len 的版本要求，无需退回 triton 后端。

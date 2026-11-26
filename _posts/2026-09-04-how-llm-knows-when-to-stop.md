@@ -18,7 +18,7 @@ categories: ai llm nanochat inference eos
 
 > **「结束」本身就是词表里的一个普通 Token。停止不是模型的特殊能力，而是一次普通的 Token 预测；「真的停下来」这个动作，由外层的推理框架执行。**
 
-以 nanochat 的词表为例，它有 65,536 个条目，其中 `hello`、`的`、` World` 这些常规 Token 之外，还混着一些看起来很特殊的字符串：`<|assistant_end|>`、`<|bos|>`……它们和普通 Token 一样，只是词表中的一个 ID。模型每一步对**全部** 65,536 个条目输出概率，当采样落到终止符上时，生成结束。
+以 nanochat 的词表为例，它有 32,768 个条目（早期版本为 65,536），其中 `hello`、`的`、` World` 这些常规 Token 之外，还混着一些看起来很特殊的字符串：`<|assistant_end|>`、`<|bos|>`……它们和普通 Token 一样，只是词表中的一个 ID。模型每一步对**全部** 32,768 个条目输出概率，当采样落到终止符上时，生成结束。
 
 本文先建立一个「三层分工」的概念框架，然后逐行剖析 [nanochat](https://github.com/karpathy/nanochat)（我之前在 [《从零构建超迷你 ChatGPT》]({{ site.baseurl }}/2025/12/05/nanochat-training/) 中跑通过它的全流程训练）是怎么在每一层实现这套机制的——它没有抽象层，每一行代码都能对应到概念，是理解这个问题最好的教材。文中所有代码片段均逐字引自该仓库，引用处附有定位到具体行号的永久链接（permalink，锚定在笔者核对的 commit 上，不随上游更新漂移），点击即可跳转对照原文。
 
@@ -71,7 +71,7 @@ SPECIAL_TOKENS = [
 
 ### 3.2 预训练：「停」是从数据打包方式里学来的
 
-模型层的学习发生在预训练。nanochat 的数据加载器（[`nanochat/dataloader.py`](https://github.com/karpathy/nanochat/blob/92d63d4/nanochat/dataloader.py#L107)）在 tokenize 每篇 FineWeb-Edu 文档时前插 `<|bos|>`，然后用 Best-Fit 算法拼进定长训练序列。实际喂给模型的数据长这样：
+模型层的学习发生在预训练。nanochat 的数据加载器（[`nanochat/dataloader.py`](https://github.com/karpathy/nanochat/blob/92d63d4/nanochat/dataloader.py#L107)）在 tokenize 每篇 ClimbMix（早期版本为 FineWeb-Edu）文档时前插 `<|bos|>`，然后用 Best-Fit 算法拼进定长训练序列。实际喂给模型的数据长这样：
 
 ```text
 <bos> 文档1 <bos> 文档2 <bos> 文档3 <bos> 文档4 ...
@@ -117,7 +117,7 @@ targets[mask_targets == 0] = -1
 
 ### 3.4 推理运行时：采样循环里的停止判断
 
-[`nanochat/engine.py` 的 `generate` 方法`](https://github.com/karpathy/nanochat/blob/92d63d4/nanochat/engine.py#L176-L275)是「LLM 如何停」的最小完整实现，值得逐段走读。主循环每步先对全词表采样，然后做终止判断（[节选自 L185-L250](https://github.com/karpathy/nanochat/blob/92d63d4/nanochat/engine.py#L185-L250)）：
+[`nanochat/engine.py` 的 `generate` 方法](https://github.com/karpathy/nanochat/blob/92d63d4/nanochat/engine.py#L176-L275)是「LLM 如何停」的最小完整实现，值得逐段走读。主循环每步先对全词表采样，然后做终止判断（[节选自 L185-L250](https://github.com/karpathy/nanochat/blob/92d63d4/nanochat/engine.py#L185-L250)）：
 
 ```python
 # engine.py（节选，注释为原文）
@@ -201,8 +201,8 @@ flowchart LR
     classDef terminal fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px;
 
     class P prompt;
-    class S1,S2,S3,S4 sampled;
-    class PS,PE,OS,OE,F forced;
+    class S1,S2,PS,S3,PE,S4 sampled;
+    class OS,OE,F forced;
     class AE terminal;
 ```
 
@@ -215,7 +215,7 @@ targets[mask_ids[:, 1:] == 0] = -1 # <-- inplace modification right here. -1 is 
 # NOTE also that the Engine returns mask=0 for BOTH the prompt tokens AND the tool use tokens.
 ```
 
-被注入的工具 Token 从 policy gradient 的 target 里挖掉，只对模型真正采样过的 Token 算梯度。另一个有趣的细节：RL batch 的 [padding 直接用 `assistant_end` 填充](https://github.com/karpathy/nanochat/blob/92d63d4/scripts/chat_rl.py#L87)（注释写明「只当 padding 用，不进损失」）——终止符在 RL 损失里几乎是隐形的，RL 对停止行为的影响是间接的：**答案没写完就停，GSM8K 的 reward 直接是 0；停得太晚则浪费采样预算**（`max_completion_tokens=256` 兜底）。真正让终止时机变得可靠的，是 SFT 阶段那一个 mask=1。
+被注入的工具 Token 从 policy gradient 的 target 里挖掉，只对模型真正采样过的 Token 算梯度。另一个有趣的细节：RL batch 的 [padding 直接用 `assistant_end` 填充](https://github.com/karpathy/nanochat/blob/92d63d4/scripts/chat_rl.py#L87)（注释写明「只当 padding 用，不进损失」）——终止符在 RL 损失里几乎是隐形的，RL 对停止行为的影响是间接的：**答案没写完就停，GSM8K 的 reward 直接是 0；停得太晚则浪费采样预算**（`max_new_tokens=256` 兜底）。真正让终止时机变得可靠的，是 SFT 阶段那一个 mask=1。
 
 ## 四：失败模式：为什么有时停不对
 
@@ -260,4 +260,4 @@ nanochat 那个几十行的生成循环，在生产系统里被工程化成了�
 
 > **LLM 把「结束」编码成了词表里的一个普通 Token，什么时候停是和语言一起从数据里学出来的；而「真的停下来」这个动作，由外层的推理框架执行，再加上 `max_tokens` 做保险。**
 
-nanoChat 最有启发性的一点，是 `<|bos|>` 的双重身份：一个 Token，既是「新文档的开始」也是「旧文档的结束」，因为它就是文档边界本身。它用一个 Token 说明了 EOS 从来不是魔法——词表里的每个条目都是平等的，是训练数据的结构和运行时的约定，赋予了其中某个条目「终止」的语义。
+nanochat 最有启发性的一点，是 `<|bos|>` 的双重身份：一个 Token，既是「新文档的开始」也是「旧文档的结束」，因为它就是文档边界本身。它用一个 Token 说明了 EOS 从来不是魔法——词表里的每个条目都是平等的，是训练数据的结构和运行时的约定，赋予了其中某个条目「终止」的语义。

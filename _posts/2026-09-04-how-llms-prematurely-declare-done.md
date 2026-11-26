@@ -27,7 +27,7 @@ categories: ai llm agent eos deep-dive
 SFT 数据几乎全是干净、完整、成功的演示轨迹。每一条都长这样：
 
 ```text
-<prompt> ... <assistant_start> 做一些工作 ... 总结收尾 <|assistant_end|>
+<prompt> ... <|assistant_start|> 做一些工作 ... 总结收尾 <|assistant_end|>
 ```
 
 模型从这个分布里学到的「完成」判据是一组**表面特征**：干过活的痕迹（改了文件、写了代码）、一段收尾总结、自信的语气。训练数据里，「看起来完成」和「真的完成」从未被区分过——因为演示轨迹里它们总是同时出现。于是只要上下文凑齐这些表面特征，$P(\text{EOS})$ 就会冲高，哪怕活只干了一半。
@@ -118,7 +118,7 @@ flowchart TD
     class DONE terminal;
 ```
 
-另一个相关的协议设计是把「声明完成」本身工具化：不让模型用裸 EOS 结束任务，而是调用一个显式的完成工具（如 SWE-agent 的 `submit`）。好处是**声明变成了显式动作，harness 可以在动作上做校验**——这正是我之前[《如何构建一个编码 Agent》]({{ site.baseurl }}/2025/12/14/how-to-build-a-coding-agent/)里介绍的框架采用的模式。
+另一个相关的协议设计是把「声明完成」本身工具化：不让模型用裸 EOS 结束任务，而是调用一个显式的完成工具（如 SWE-agent 的 `submit`）。好处是**声明变成了显式动作，harness 可以在动作上做校验**——关于编码 Agent 如何通过工具循环与外部世界交互，可参考我之前的[《如何构建一个编码 Agent》]({{ site.baseurl }}/2025/12/14/how-to-build-a-coding-agent/)。
 
 ### 3.2 上下文工程：把地面真相喂进上下文
 

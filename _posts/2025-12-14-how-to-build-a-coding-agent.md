@@ -123,7 +123,7 @@ categories: ai coding-agent
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.020.png)
 
-<p class="text-center">github co-pilot</p>
+<p class="text-center">GitHub Copilot</p>
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.022.png)
 
@@ -155,7 +155,7 @@ Cursor、Windsurf、Claude Code、GitHub Copilot 和 Amp 只是在 LLM token 循
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.025.png)
 
-如果你想要「道德一致」的东西，那就是 Anthropic 或 OpenAI。所以那是高安全性。同样，你有 Oracle。Oracle 与 Agentic 截然相反。Oracle 适合总结任务或需要高水平思考的任务。
+如果你想要「价值观对齐」的模型，那就是 Anthropic 或 OpenAI。所以那是高安全性。同样，你有 Oracle。Oracle 与 Agentic 截然相反。Oracle 适合总结任务或需要高水平思考的任务。
 
 ![Image](/assets/images/how-to-build-a-coding-agent/how-to-build-an-agent.026.png)
 
@@ -232,7 +232,7 @@ Sonnet 宣传的上下文窗口是 200K。然而，你不能全部使用它，�
 
 ![Image](/assets/images/how-to-build-a-coding-agent/inference-loop-diagram.png)
 
-<p class="text-center">推理循环（减去工具注册）</p>
+<p class="text-center">推理循环（不含工具注册）</p>
 
 让我们 Clone 以下这个仓库并通过 `go run chat.go` 运行基本的聊天应用程序：
 
@@ -258,7 +258,7 @@ Sonnet 宣传的上下文窗口是 200K。然而，你不能全部使用它，�
 
 当我们谈论 Agentic 时，我们指的是某种工具调用，某种已经在其奖励函数上受过训练以调用工具的东西。有些模型经过明确训练；它们只想追逐坚果，就像松鼠一样（见下文）。这不是坚果，是工具。
 
-[Claude Sonnet is a small-brained mechanical squirrel of <T>](https://ghuntley.com/cars/)
+[Claude Sonnet is a small-brained mechanical squirrel of &lt;T&gt;](https://ghuntley.com/cars/)
 
 解释 MCP 或工具的最简单方法是，它只是一个顶部带有广告牌的函数，推动 LLM 的潜在空间来调用该函数。
 
@@ -296,13 +296,13 @@ var ReadFileDefinition = ToolDefinition{
 让我们再次在代码仓库根目录，创建一个文件：
 
 ```bash
-cat << EOF
+cat << EOF > riddle.txt
 I have a mane but I'm not a lion,
 I have four legs but I'm not a table,
 I can gallop but I'm not running,
 People say I'm disagreeable because I always say "neigh."
 What am I?
-EOF > riddle.txt
+EOF
 ```
 
 然后让我们运行读取文件工具：
@@ -389,7 +389,7 @@ var BashDefinition = ToolDefinition{
 >
 > **Bash command succeeded:** ps aux (output: 87344 bytes)
 >
-> **result:** <snipped>
+> **result:** &lt;snipped&gt;
 >
 > **Claude:** Based on the output of the `ps aux` command, here's a summary of the processes running on this computer:System Summary:This is a multi-CPU system with 96 cores/threads (visible from the many CPU-related kernel threads)Running Linux with systemd as the init systemThe system has been up since August 20th (seen in START column)
 
@@ -401,7 +401,7 @@ var BashDefinition = ToolDefinition{
 
 让我们再次在代码仓库根目录，运行编辑工具：
 
-`go run edit_file.go`
+`go run edit_tool.go`
 
 > **You:** Claude, mate. Create `fizzbuzz.js` with nodejs that does fizzbuzz up to 20 and execute it to ensure it works
 >

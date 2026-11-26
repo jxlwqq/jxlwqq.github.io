@@ -16,6 +16,8 @@ OpenAI 推出的 ChatGPT 等大语言模型作为深度神经网络模型的代�
 从零开始构建大语言模型不仅是一次深入了解模型机制和局限性的绝佳机会，还为我们提供了预训练和微调开源大语言模型，使其适应特定领域的数据集或任务的必要知识。
 Andrej Karpathy 最近开源了 [nanochat](https://github.com/karpathy/nanochat) 项目，号称花 100 美元就能从零训出一个能聊天的模型。正好手边有台 DGX Spark，于是决定跑一遍完整流程，顺便记录下来。
 
+> **⚠️ 版本说明**：本文实测与命令基于 **2025 年 12 月版 nanochat**。2026 年上游仓库已有较大演进：移除了独立的 `mid_train`、`base_loss`、`report` 与 `chat_web` 脚本（简化为 `base_train` → `chat_sft` → `chat_rl`，交互改用 `scripts.chat_cli`）；预训练数据集从 FineWeb-Edu 切换为 NVIDIA ClimbMix；默认词表缩小至 32,768 且 `rustbpe` 改为 PyPI 直接安装；模型架构新增 Sliding Window Attention、Flash Attention 3、Value Embeddings 与 `--fp8` 训练，8×H100 训到 GPT-2 级已压缩至 ~1.65 小时 / ~\$48。若基于最新 `master` 复现，请以仓库最新 `runs/speedrun.sh` 为准。
+
 ### 1.2 nanochat 项目介绍
 
 nanochat 是一个全栈式的大语言模型实现，旨在用最简洁、最少依赖的代码库复刻 ChatGPT 的核心功能。它不仅涵盖了从分词（Tokenization）、预训练（Pre-training）、微调（Fine-tuning）到推理（Inference）和 Web 服务部署的完整生命周期，还特别强调代码的可读性和可修改性（Hackable）。
@@ -105,17 +107,15 @@ nanochat 项目推荐使用 **8 张 NVIDIA H100/H200 GPU**（基于 **Hopper 架
 
 * **CUDA 13.0 环境适配**：
     * **调整原因**：DGX Spark 搭载的 Grace Blackwell GB10 芯片需要最新的 CUDA 13.0 支持才能发挥最佳性能。
-    * **具体调整**：修改 `pyproject.toml`，将 PyTorch 版本升级至 `>=2.9.0`，并指定 `cu130` 源。同时引入了 `triton>=3.5.0`
-      ，以支持 Blackwell 架构下的内核编译与优化。
+    * **具体调整**：修改 `pyproject.toml`，将 PyTorch 版本升级至 `>=2.9.0`，并指定 `cu130` 源。同时引入了 `triton>=3.5.0`，以支持 Blackwell 架构下的内核编译与优化。
 
 * **内存管理优化**：
     * **调整原因**：虽然 128 GB 统一内存容量很大，但为了防止长时间训练中的显存碎片化导致 OOM（Out Of Memory）。
-    * **具体调整**：在训练脚本中设置了 `PYTORCH_ALLOC_CONF=max_split_size_mb:512`，优化 PyTorch 的内存分配策略。同时，将预训练的 `device_batch_size` 调整为 **32**，在充分利用内存与保持稳定性之间寻找平衡点。
+    * **具体调整**：在训练脚本中设置了 `PYTORCH_ALLOC_CONF=max_split_size_mb:512`，优化 PyTorch 的内存分配策略；预训练保持默认 `device_batch_size=32`，在充分利用内存与保持稳定性之间取得平衡。
 
 * **网络加速配置**：
     * **调整原因**：考虑到国内网络环境访问 PyPI 和 Hugging Face 可能受限或速度较慢。
-    * **具体建议**：推荐配置 pip 使用清华大学镜像源 (`https://pypi.tuna.tsinghua.edu.cn/simple`)，以及使用 HF-Mirror (
-      `https://hf-mirror.com`) 加速模型和数据集的下载。
+    * **具体建议**：推荐配置 pip 使用清华大学镜像源（`https://pypi.tuna.tsinghua.edu.cn/simple`），以及使用 HF-Mirror（`https://hf-mirror.com`）加速模型和数据集的下载。
 
 环境配置脚本如下：
 
@@ -156,8 +156,8 @@ sed -i 's|cu128|cu130|g' pyproject.toml
 sed -i 's|# target torch to cuda 12.8 or CPU|# target torch to cuda 13.0 or CPU|' pyproject.toml
 
 
- # Use HF-Mirror to accelerate dataset download in China
- sed -i 's|https://huggingface.co|https://hf-mirror.com|g' nanochat/dataset.py
+# Use HF-Mirror to accelerate dataset download in China
+sed -i 's|https://huggingface.co|https://hf-mirror.com|g' nanochat/dataset.py
 
 # install uv (if not already installed)
 command -v uv &> /dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -226,6 +226,8 @@ graph LR
     Tokens -- "2. 按字母顺序排列并去重<br/>映射到唯一整数ID" --> Vocab
 ```
 
+> 注：上图为便于理解词表映射的词级（word-level）简化示意；实际的字节级 BPE 会按字节对的合并优先级（merge rank）而非字母顺序分配 Token ID。
+
 #### 2.2.2 词嵌入（Word Embeddings）
 
 虽然词元 ID 解决了「将文本转换为数字」的问题，但这些数字本身是离散的，没有任何语义关联。例如，词元 ID `100`（apple）和 `101`（banana）在数值上只差 1，但计算机并不知道它们都是水果。
@@ -260,8 +262,7 @@ graph LR
   为了节省显存，nanochat 会将嵌入层的权重转换为 `bfloat16` 格式（如果硬件支持），这在保持精度的同时显著降低了内存占用。
 
 * **差异化学习率**：
-  在优化器设置中，nanochat 对嵌入层使用了 **AdamW** 优化器，并对其学习率进行了特殊缩放（$\propto 1/\sqrt{d_{model}}$
-  ），而模型的主体部分（Linear 层）则使用 **Muon** 优化器。这种精细的调优策略确保了不同类型的参数都能以最佳速度收敛。
+  在优化器设置中，nanochat 对嵌入层使用了 **AdamW** 优化器，并对其学习率进行了特殊缩放（$\propto 1/\sqrt{d_{model}}$），而模型的主体部分（Linear 层）则使用 **Muon** 优化器。这种精细的调优策略确保了不同类型的参数都能以最佳速度收敛。
 
 * **实现级别说明（Lookup → Norm → LM Head）**：
   为了让读者更直观地理解嵌入是如何被模型使用，下面给出一个简化的流程图（基于 `nanochat/gpt.py` 的前向逻辑）：
@@ -331,7 +332,7 @@ BPE 的实现相对复杂，nanochat 直接使用现有的 Python 开源库 tikt
 
 1. **预分词（Pre-tokenization）**：使用正则表达式 `SPLIT_PATTERN` 将文本切分为候选 Token。该模式针对小模型优化，将数字匹配规则从 GPT-4 的 `\p{N}{1,3}` 调整为 `\p{N}{1,2}`，减少数字类 Token 对词表空间的占用：
    ```
-   r"""'(?i:[sdmt]|ll|ve|re)|[^\p{L}\p{N}]?+\p{L}+|\p{N}{1,2}| ?[^\s\p{L}\p{N}]++[\n]*|\s*[\n]|\s+(?!\S)|\s+"""
+   r"""'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,2}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+"""
    ```
 
 2. **字节级 BPE 训练**：基于 UTF-8 字节流进行训练，而非直接操作 Unicode 字符。这确保了对任意语言和特殊字符的无损处理。训练过程迭代合并高频字节对，直至词表达到目标大小 **65,536**（2^16），可用两字节表示任意 Token ID。
@@ -373,7 +374,7 @@ $$
 
 这个指标综合了 Tokenizer 压缩率和模型预测准确性，是评估语言模型的重要指标。BPB 越低，表示模型对文本的建模能力越强。
 
-**评估基准**:脚本在多种文本类型上测试 Tokenizer 的泛化能力:
+**评估基准**：脚本在多种文本类型上测试 Tokenizer 的泛化能力：
 
 - **新闻文本**（`news_text`）：英文政府公告
 - **韩文文本**（`korean_text`）：非英语语言压缩测试
@@ -439,14 +440,14 @@ nanochat 采用了一个现代化的 GPT 架构，融合了许多最新的研究
 * **无偏置设计 (No Bias)**：移除了所有线性层的偏置项，简化了模型结构。
 * **RMSNorm**：使用均方根归一化，且不带可学习参数，进一步精简模型。
 * **Group Query Attention (GQA) 支持**：支持使用更少的 Key/Value 头来减少推理时的内存占用和计算量（默认配置下 GQA 未启用，即 `n_kv_head = n_head`）。
-* **零初始化 (Zero Init)**：对 `lm_head` 和每层的 `c_proj`（Attention 和 MLP 的输出投影）进行零初始化，有助于训练初期的稳定性。
+* **零初始化 (Zero Init)**：对每层的 `c_proj`（Attention 和 MLP 的输出投影）进行零初始化，同时 `lm_head` 使用极小标准差正态初始化（`std=0.001`），有助于训练初期的稳定性。
 
 #### 2.3.2 优化器创新（Optimization）
 
 nanochat 引入了一种混合优化策略：
 
-* **Muon 优化器**：用于优化模型中的 2D 矩阵参数（如 Linear 层的权重）。Muon 是一种基于动量的正交优化器，其核心思想是通过 **Newton-Schulz 迭代** 将梯度正交化后再更新参数，使得权重矩阵保持良好的条件数，从而加速收敛并提升训练稳定性。
-* **AdamW 优化器**：用于优化 1D 向量参数（如 Embedding 和 Norm 层）。
+* **Muon 优化器**：用于优化 Transformer Block 中的 2D 矩阵参数（Attention 与 MLP 的线性层权重）。Muon 是一种基于动量的正交优化器，其核心思想是通过 **Newton-Schulz 迭代** 将梯度正交化后再更新参数，使得权重矩阵保持良好的条件数，从而加速收敛并提升训练稳定性。
+* **AdamW 优化器**：用于优化不适合正交化更新的词表投影层（`wte` 嵌入层、`lm_head` 输出层）以及其余 1D 标量参数（RMSNorm 无可学习参数）。
 
 这种组合（Muon + AdamW）旨在在保持收敛速度的同时，最大化训练的吞吐量。
 
@@ -456,8 +457,7 @@ nanochat 引入了一种混合优化策略：
 
 * **参数量**：约 0.56B
     * **含义**：参数量相当于模型的「脑细胞」数量，决定了其记忆知识和处理复杂逻辑的潜力。0.56B 参数属于轻量级模型，比较适合个人开发者入门学习。
-    * **来源**：该数值是根据 `d20` 配置（即 20 层深度）动态推导出来的。具体来说，当深度设为 20 时，模型维度被自动设为 1280 (
-      `20 * 64`)。累加所有权重参数后，总计约为 5.61 亿：
+    * **来源**：该数值是根据 `d20` 配置（即 20 层深度）动态推导出来的。具体来说，当深度设为 20 时，模型维度被自动设为 1280（`20 * 64`）。累加所有权重参数后，总计约为 5.61 亿：
         * **Embedding 层 (wte)**: $65,536 \times 1,280 \approx 83.9 \text{M}$
         * **Transformer 层 (20层)**: $20 \times (12 \times 1,280^2) \approx 393.2 \text{M}$
             * 每层包含 **Attention** 和 **MLP** 两个子模块，参数量为 $12 \times d^2$，其中：
@@ -477,8 +477,7 @@ nanochat 引入了一种混合优化策略：
         * **LM Head 层**: $1,280 \times 65,536 \approx 83.9 \text{M}$
         * **总计**: $83.9 + 393.2 + 83.9 \approx 561 \text{M}$
 * **层数 (Depth)**：20 层
-    * **含义**：层数代表了神经网络的深度。每一层都是一个 Transformer 模块，数据经过层层加工，提取出从语法到语义的特征。20
-      层是一个在性能和算力消耗之间取得平衡的经典设计。
+    * **含义**：层数代表了神经网络的深度。每一层都是一个 Transformer 模块，数据经过层层加工，提取出从语法到语义的特征。20 层是一个在性能和算力消耗之间取得平衡的经典设计。
 * **上下文长度**：2048 Token
     * **含义**：上下文长度（Context Length）是模型的「短期记忆」窗口，决定了它一次能处理多少信息。2048 Token 大约相当于 1500 个英文单词或 1000 个汉字。
     * **来源**：该数值直接来源于训练脚本 `scripts/base_train.py` 中的配置 `max_seq_len = 2048`。这意味着如果对话或文章超过这个长度，模型就会「忘记」最早的内容。
@@ -622,7 +621,7 @@ nanochat 的 RL 实现最初受到 GRPO（Group Relative Policy Optimization）�
 * **去繁就简**：nanochat 对 GRPO 进行了进一步简化：
     * **删除信任域约束**：没有 KL 散度正则化来约束与参考模型的距离。
     * **无需 PPO 裁剪**：因为是 On-Policy 训练（每次用最新模型采样），不需要 PPO 的 ratio+clip 机制。
-    * **Token 级归一化**：采用 GAPO 风格的 Token 级归一化，而非传统的序列级归一化。
+    * **Token 级归一化**：采用 DAPO 风格的 Token 级归一化，而非传统的序列级归一化。
     * **简化优势函数**：使用 $(r - \mu)$ 作为优势值，而非标准的 z-score 归一化 $(r - \mu) / \sigma$。
   
   最终实现更接近于带有组内基准的 **REINFORCE** 算法，但保留了 GRPO 的核心思想——**通过对比来学习**。
