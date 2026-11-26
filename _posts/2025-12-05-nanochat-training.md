@@ -12,23 +12,23 @@ categories: ai llm-training dgx-spark nanochat gpt
 
 ### 1.1 为什么要自己构建大语言模型？
 
-OpenAI 推出的 ChatGPT 等大语言模型作为深度神经网络模型的代表，为自然语言处理（NLP）领域带来了革命性的变化。大语言模型在理解、生成和解释人类语言方面拥有出色的能力。
-从零开始构建大语言模型不仅是一次深入了解模型机制和局限性的绝佳机会，还为我们提供了预训练和微调开源大语言模型，使其适应特定领域的数据集或任务的必要知识。
-Andrej Karpathy 最近开源了 [nanochat](https://github.com/karpathy/nanochat) 项目，号称花 100 美元就能从零训出一个能聊天的模型。正好手边有台 DGX Spark，于是决定跑一遍完整流程，顺便记录下来。
+Andrej Karpathy 开源了 [nanochat](https://github.com/karpathy/nanochat) 项目，号称花 100 美元就能从零训出一个能聊天的模型。自己从头跑一遍预训练和后训练，比光看论文更容易搞清楚大模型的底层细节和局限。正好手边有台 DGX Spark，于是决定跑一遍完整流程，顺便把过程记录下来。
 
-> **⚠️ 版本说明**：本文实测与命令基于 **2025 年 12 月版 nanochat**。2026 年上游仓库已有较大演进：移除了独立的 `mid_train`、`base_loss`、`report` 与 `chat_web` 脚本（简化为 `base_train` → `chat_sft` → `chat_rl`，交互改用 `scripts.chat_cli`）；预训练数据集从 FineWeb-Edu 切换为 NVIDIA ClimbMix；默认词表缩小至 32,768 且 `rustbpe` 改为 PyPI 直接安装；模型架构新增 Sliding Window Attention、Flash Attention 3、Value Embeddings 与 `--fp8` 训练，8×H100 训到 GPT-2 级已压缩至 ~1.65 小时 / ~\$48。若基于最新 `master` 复现，请以仓库最新 `runs/speedrun.sh` 为准。
+> **版本说明**：本文实测与命令基于 2025 年 12 月版 nanochat。2026 年上游仓库已有较大改动：移除了独立的 `mid_train`、`base_loss`、`report` 与 `chat_web` 脚本（简化为 `base_train` → `chat_sft` → `chat_rl`，交互改用 `scripts.chat_cli`）；预训练数据集从 FineWeb-Edu 切换为 NVIDIA ClimbMix；默认词表缩小至 32,768 且 `rustbpe` 改为 PyPI 直接安装；模型架构新增 Sliding Window Attention、Flash Attention 3、Value Embeddings 与 `--fp8` 训练，8×H100 训到 GPT-2 级已压缩至 ~1.65 小时 / ~\$48。若基于最新 `master` 复现，请以仓库最新 `runs/speedrun.sh` 为准。
 
 ### 1.2 nanochat 项目介绍
 
-nanochat 是一个全栈式的大语言模型实现，旨在用最简洁、最少依赖的代码库复刻 ChatGPT 的核心功能。它不仅涵盖了从分词（Tokenization）、预训练（Pre-training）、微调（Fine-tuning）到推理（Inference）和 Web 服务部署的完整生命周期，还特别强调代码的可读性和可修改性（Hackable）。
-现代大语言模型的构建通常分为**预训练（Pre-training）** 和 **后训练（Post-training）** 两个主要阶段。
-* **预训练阶段**：这是消耗算力最大的阶段，旨在让模型从海量无标注文本中学习通用知识，产出**基座模型（Base Model）**。
-* **后训练阶段**：旨在将基座模型转化为能与人交互的助手。在 nanochat 项目中，这一阶段被细分为三个具体步骤：
-    * **中期训练（Mid-training）**：让模型适应对话格式和工具使用。值得注意的是，在更广泛的业界实践中，这一阶段通常也被称为「继续预训练」（Continued Pre-training）或「增量预训练」（Incremental Pre-training）。
-    * **监督微调（SFT）**：通过问答数据教会模型遵循指令。
-    * **强化学习（RL）**：进一步优化模型的回答质量（如数学推理能力）。
+nanochat 是一个极简的全栈大模型实现，用很少的依赖覆盖了分词（Tokenization）、预训练（Pre-training）、微调（Fine-tuning）、推理（Inference）和 Web 服务部署，代码可读性高，方便直接改着玩。
 
-为了帮助大家理清这四个阶段（基座训练 + 后训练三部曲）的递进关系，我整理了下面这张全景对照表，涵盖了从脚本入口到真实数据集的完整细节：
+大模型的训练通常分为预训练和后训练两大块：
+
+* **预训练（Pre-training）**：算力消耗最大，从海量无标注文本里学习通用知识，产出基座模型（Base Model）。
+* **后训练（Post-training）**：把基座模型变成能对话的助手。nanochat 把这一步拆成了三个阶段：
+    * **中期训练（Mid-training）**：让模型适应对话格式和工具调用，类似业界常说的继续预训练（Continued Pre-training）或增量预训练（Incremental Pre-training）。
+    * **监督微调（SFT）**：用问答数据教模型遵循指令。
+    * **强化学习（RL）**：进一步拉高特定能力（这里是数学推理）。
+
+四个阶段的脚本、数据集和在 DGX Spark 上的实测耗时如下：
 
 | 核心阶段 (Stage)               | 具体步骤 (Step)                 | nanochat 对应脚本        | 核心目标 (Goal)                            | 输入数据 (Input)                                                          | 数据集 (Dataset)                                                                                                                                                                                                                                                                                                                                                                                                                     | 输出模型 (Output)                                                | 关键特征 (Key Features)                                           | 训练耗时 (DGX Spark) |
 |:---------------------------|:----------------------------|:---------------------|:---------------------------------------|:----------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------|:--------------------------------------------------------------|:-----------------|
@@ -37,9 +37,9 @@ nanochat 是一个全栈式的大语言模型实现，旨在用最简洁、最�
 |                            | **监督微调**<br>(SFT)           | `scripts.chat_sft`   | **指令遵循**：教会模型如何像助手一样对话，理解用户意图并正确回应。    | **指令-回复对**<br>(Instruction-Response Pairs)<br><i>来源：高质量人工撰写或筛选的问答</i> | **[ARC](https://huggingface.co/datasets/allenai/ai2_arc) (Easy/Challenge), [GSM8K](https://huggingface.co/datasets/openai/gsm8k) (Main), [SmolTalk](https://huggingface.co/datasets/HuggingFaceTB/smol-smoltalk) (10k subset), [Identity](https://karpathy-public.s3.us-west-2.amazonaws.com/identity_conversations.jsonl) (Synthetic), [English Words](https://github.com/dwyl/english-words) (SpellingBee)**<br>精选指令集 (~23K 样本) | **对话/指令模型**<br>(Chat/Instruct Model)<br><i>能力：能流畅对话，遵循指令</i> | 模仿学习 (Supervised Learning)<br>让模型「学会说话」                       | ~1 小时            |
 |                            | **强化学习**<br>(RL)            | `scripts.chat_rl`    | **偏好对齐**：进一步优化回答质量，提升特定能力（如数学逻辑）或安全性。  | **提示词 + 奖励信号**<br>(Prompts + Rewards)<br><i>来源：GSM8K 数学题、人类偏好排序</i>   | **[GSM8K](https://huggingface.co/datasets/openai/gsm8k) (Main)**<br>数学应用题 (~7.5K 问题)                                                                                                                                                                                                                                                                                                                                              | **对齐模型**<br>(Aligned Model)<br><i>能力：符合人类价值观，逻辑更严密</i>       | 探索与利用 (Exploration & Exploitation)<br>让模型「说得更好」               | ~6 小时            |
 
-> **💡 关于安全对齐**：在业界完整的大模型训练流程中，**安全性和价值观对齐**主要在 **RL 阶段**通过 RLHF（Reinforcement Learning from Human Feedback）或 DPO（Direct Preference Optimization）等方法实现。人类标注员会对模型回复进行偏好排序，训练奖励模型来评估回答是否**有帮助（Helpful）**、**诚实（Honest）**、**无害（Harmless）**——即著名的 **3H 原则**。nanochat 作为教学项目，仅使用 GSM8K 数学题的正确性作为奖励信号，**并未实现完整的安全对齐**。
+> **关于安全对齐**：业界完整的大模型训练流程里，安全性和价值观对齐主要在 RL 阶段通过 RLHF（Reinforcement Learning from Human Feedback）或 DPO（Direct Preference Optimization）完成。人类标注员对模型回复做偏好排序，训练奖励模型来评估回答是否有帮助（Helpful）、诚实（Honest）、无害（Harmless），即 3H 原则。nanochat 作为教学项目，只拿 GSM8K 数学题的正确性当奖励信号，没有做安全对齐。
 
-下图展示了 nanochat 完整的训练流水线，清晰地描绘了从海量文本到最终对齐模型的演进过程：
+整个训练流水线如下：
 
 ```mermaid
 flowchart LR
@@ -85,11 +85,11 @@ flowchart LR
 
 上图为两位 AI 研究人员正在研究 DGX Spark 设备，其体积小巧，可轻松单手托持。
 
-**NVIDIA DGX Spark** 是专为边缘计算和个人开发者设计的高性能 AI 工作站。它搭载了 **NVIDIA Grace Blackwell GB10** 芯片，拥有 **128 GB 统一内存架构（Unified Memory Architecture）**。
+NVIDIA DGX Spark 是一台面向边缘计算和个人开发者的 AI 工作站，搭载 NVIDIA Grace Blackwell GB10 芯片，配备 128 GB 统一内存架构（Unified Memory Architecture）。
 
-* **硬件优势**：传统的消费级显卡显存通常受限（如 24 GB），难以加载或训练较大的模型。而 DGX Spark 的 128 GB 统一内存打破了这一瓶颈。
-* **新一代精度支持**：得益于 Blackwell 架构，DGX Spark 原生支持 **MXFP4**（Microscaling Format）和 **NVFP4** 等前沿数据类型。这些低精度格式在保持模型性能的同时，能显著降低显存占用并大幅提升计算吞吐量，为未来的优化预留了空间。值得一提的是，OpenAI 开源的 [gpt-oss](https://github.com/openai/gpt-oss) 项目正是采用 **MXFP4** 量化技术，使得 1170 亿参数的 `gpt-oss-120b` 模型能够在单张 80GB 显存的 GPU（如 NVIDIA H100 或 AMD MI300X）上运行推理，而 `gpt-oss-20b` 模型更是可以在 16GB 显存内运行。这充分展示了低精度量化技术在大模型部署中的巨大潜力。
-* **美中不足**：虽然配备 128 GB 的统一内存，但不得不吐槽的是，它采用的是 LPDDR5X 统一内存，理论峰值带宽仅为 **273 GB/s**（数据来源：[NVIDIA 官方规格](https://www.nvidia.com/en-us/products/workstations/dgx-spark/)），相比数据中心级别 H100 的 HBM3 带宽（**3.35 TB/s**）有约 **12 倍**的差距。由于大语言模型训练是典型的内存带宽受限（Memory-Bound）任务，这意味着在 DGX Spark 上训练时，GPU 计算单元往往在「等待」数据从内存传输过来，导致训练时间显著延长（这也是为什么我们需要耐心等待约 10 天来完成预训练的原因）。
+* **大内存**：传统消费级显卡显存通常只有 24 GB，跑稍大一点的模型就捉襟见肘，128 GB 统一内存宽松很多。
+* **低精度支持**：Blackwell 架构原生支持 MXFP4（Microscaling Format）和 NVFP4。OpenAI 开源的 [gpt-oss](https://github.com/openai/gpt-oss) 项目就用了 MXFP4 量化，让 1170 亿参数的 `gpt-oss-120b` 能在单张 80GB 显存的 GPU（H100 或 AMD MI300X）上推理，`gpt-oss-20b` 更是塞进了 16GB 显存。
+* **带宽短板**：虽然有 128 GB 统一内存，但它用的是 LPDDR5X，理论峰值带宽只有 273 GB/s（数据来源：[NVIDIA 官方规格](https://www.nvidia.com/en-us/products/workstations/dgx-spark/)），跟数据中心 H100 的 HBM3（3.35 TB/s）差了约 12 倍。大模型训练本身是内存带宽受限（Memory-Bound）的活，在 DGX Spark 上跑的时候，计算单元大部分时间都在等数据从内存搬过来，这也是为什么预训练硬生生跑了 10 天。
 
 ![nvidia-smi](/assets/images/nanochat-training/nvidia-smi.png)
 
@@ -97,25 +97,15 @@ flowchart LR
 
 ## 二：实战演练
 
-> **⚠️ 网络环境提示**：全程需要科学上网，以确保能够顺利访问境外相关资源。
+> **网络环境提示**：全程需要科学上网，以便访问境外资源。
 
 ### 2.1 DGX Spark 训练环境适配
 
-nanochat 项目推荐使用 **8 张 NVIDIA H100/H200 GPU**（基于 **Hopper 架构**）来快速完成训练（约 4 小时）。而在 DGX Spark 上，我们使用的是单张 **Grace Blackwell GB10** 芯片（基于 **Blackwell 架构**）。
+nanochat 官方推荐用 8 张 NVIDIA H100/H200 GPU（Hopper 架构），大概 4 小时就能训完。在单张 Grace Blackwell GB10 上跑通全流程，主要做了三处适配：
 
-为了在 DGX Spark 上顺利跑通 nanochat 的全流程训练，我们在原基础之上进行了以下关键适配：
-
-* **CUDA 13.0 环境适配**：
-    * **调整原因**：DGX Spark 搭载的 Grace Blackwell GB10 芯片需要最新的 CUDA 13.0 支持才能发挥最佳性能。
-    * **具体调整**：修改 `pyproject.toml`，将 PyTorch 版本升级至 `>=2.9.0`，并指定 `cu130` 源。同时引入了 `triton>=3.5.0`，以支持 Blackwell 架构下的内核编译与优化。
-
-* **内存管理优化**：
-    * **调整原因**：虽然 128 GB 统一内存容量很大，但为了防止长时间训练中的显存碎片化导致 OOM（Out Of Memory）。
-    * **具体调整**：在训练脚本中设置了 `PYTORCH_ALLOC_CONF=max_split_size_mb:512`，优化 PyTorch 的内存分配策略；预训练保持默认 `device_batch_size=32`，在充分利用内存与保持稳定性之间取得平衡。
-
-* **网络加速配置**：
-    * **调整原因**：考虑到国内网络环境访问 PyPI 和 Hugging Face 可能受限或速度较慢。
-    * **具体建议**：推荐配置 pip 使用清华大学镜像源（`https://pypi.tuna.tsinghua.edu.cn/simple`），以及使用 HF-Mirror（`https://hf-mirror.com`）加速模型和数据集的下载。
+* **CUDA 13.0 环境**：GB10 芯片需要 CUDA 13.0 支持。修改 `pyproject.toml`，将 PyTorch 升级到 `>=2.9.0` 并指定 `cu130` 源，同时加上 `triton>=3.5.0` 以支持 Blackwell 架构的内核编译。
+* **内存分配策略**：虽然有 128 GB 统一内存，长时间训练仍可能因为显存碎片 OOM。脚本里加上 `PYTORCH_ALLOC_CONF=max_split_size_mb:512`，预训练保持默认的 `device_batch_size=32`。
+* **国内镜像加速**：pip 切到清华大学镜像源（`https://pypi.tuna.tsinghua.edu.cn/simple`），数据集下载走 HF-Mirror（`https://hf-mirror.com`）。
 
 环境配置脚本如下：
 
@@ -171,26 +161,15 @@ source .venv/bin/activate
 
 ### 2.2 处理文本数据
 
-在正式开始训练之前，我们需要先把海量文本转换成模型能理解的「数字语言」。这个过程就像给电脑准备一本「字典」，让它知道如何阅读人类的语言。
+开始训练前，得先把原始文本转成模型能处理的整数序列。
 
 #### 2.2.1 词元与词元 ID
 
-* **词元（Token）**：是模型理解和处理文本的最小单位。它不一定等同于一个单词，它可以是一个单词、一个汉字、一个词根，甚至是一个字符或字节。例如，单词「learning」可能被拆分为「learn」和「ing」两个词元。
-* **词元 ID（Token ID）**：为了让计算机能够处理，每个唯一的词元都会被分配一个独一无二的数字编号，这就是词元 ID。模型实际上是在处理这些数字序列，而不是文本本身。
+词元（Token）是模型处理文本的最小单位，可以是一个词、一个汉字、一个词根，或者单个字节，比如 `learning` 可能拆成 `learn` 和 `ing`。每个词元在词表里对应一个唯一的整数编号，即词元 ID（Token ID）。
 
-nanochat 采用了与 **GPT-4** 相同的 **BPE（Byte Pair Encoding）** 分词算法，但在细节上针对小模型进行了优化：
+nanochat 沿用了 GPT-4 的字节级 BPE（Byte Pair Encoding）方案，但针对小模型做了点改动：预分词正则 `SPLIT_PATTERN` 用来切分缩写（如 `'ll`、`'ve`）、数字和标点，其中数字匹配从 GPT-4 的 `\p{N}{1,3}` 改成了 `\p{N}{1,2}`（最多 2 位数字），避免数字吃掉太多词表空间。因为操作的是 UTF-8 字节流而非 Unicode 字符，任何语言和 emoji 都能无损编码，不会出现未知字符（OOV）。
 
-* **预分词（Pre-tokenization）**：首先使用正则表达式（Regex）将文本粗略地切分成一个个小块。nanochat 使用的正则模式 `SPLIT_PATTERN` 能够智能地处理缩写（如 `'ll`、`'ve`）、数字和标点符号。
-    * *优化点*：nanochat 将数字的匹配规则从 GPT-4 的 `\p{N}{1,3}`（最多 3 位数字）调整为 `\p{N}{1,2}`（最多 2 位数字），这样可以减少数字类词元对词表空间的占用，更适合小参数量的模型。
-* **字节级 BPE**：它不是直接处理 Unicode 字符，而是处理 UTF-8 编码后的字节。这意味着它可以处理任何语言的文本，甚至包括 emoji 表情，而不会出现「未知字符」错误。
-
-将词元转换成词元 ID 的过程通常称为 **Encoding（编码）**：
-
-* **查表**：分词器内部维护着一个巨大的**词表（Vocabulary）**，记录了所有已知的词元及其对应的 ID（nanochat 的词表大小为 65,536）。
-* **映射**：当文本被切分成词元序列后，分词器会遍历这个序列，在词表中查找每个词元对应的 ID。
-* **输出**：最终，一段文本就被转换成了一串数字列表（Tensor），这才是送入神经网络的真正「输入」。
-
-例如：`"Hello world"` -> 分词 -> `["Hello", " world"]` -> 查表 -> `[15496, 995]`。
+编码（Encoding）的过程就是查表映射：词表大小为 65,536，文本切分成词元后逐个查出 ID，拼成整数列表（Tensor）送进网络。比如 `"Hello world"` 拆成 `["Hello", " world"]`，查表后变成 `[15496, 995]`。
 
 ```mermaid
 graph LR
@@ -230,42 +209,27 @@ graph LR
 
 #### 2.2.2 词嵌入（Word Embeddings）
 
-虽然词元 ID 解决了「将文本转换为数字」的问题，但这些数字本身是离散的，没有任何语义关联。例如，词元 ID `100`（apple）和 `101`（banana）在数值上只差 1，但计算机并不知道它们都是水果。
+词元 ID 只是离散编号，彼此没有语义关系：ID `100`（apple）和 `101`（banana）数值上相邻，模型却无从知道它们都是水果。词嵌入把每个 ID 映射到一个高维连续向量（d20 配置下是 1280 维），让语义相近的词在空间里靠近，语义关系也能用向量加减表达（比如 $Vector(King) - Vector(Man) + Vector(Woman) \approx Vector(Queen)$）。
 
-**词嵌入（Word Embeddings）** 就是为了解决这个问题。它将每个词元 ID 映射到一个高维的连续向量空间中（nanochat d20 配置下为 1280 维）。在这个空间里：
+看 `nanochat/gpt.py` 的实现，词嵌入部分有几个设计细节：
 
-* **语义相似**的词（如「king」和「queen」）在距离上会靠得很近。
-* **语义关系**可以通过向量运算来表示（经典的例子：$Vector(King) - Vector(Man) + Vector(Woman) \approx Vector(Queen)$）。
-
-简单来说，词嵌入就是给每个词元赋予一个「特征列表」，让模型能够理解词与词之间的微妙关系。
-
-在 `nanochat/gpt.py` 中，我们可以看到 nanochat 对词嵌入的处理有几个显著特点：
-
-* **独立的嵌入层（`wte`）**：nanochat 使用一个标准的 `nn.Embedding` 层作为查找表，将 65,536 个词元（由 Tokenizer 训练决定）映射为高维向量（d20 配置下为 1280 维）。
+* **独立嵌入层（`wte`）**：用标准的 `nn.Embedding` 把 65,536 个词元映射为 1280 维向量。
   ```python
   self.transformer = nn.ModuleDict({
       "wte": nn.Embedding(config.vocab_size, config.n_embd),
       # ...
   })
   ```
-
-* **解绑权重（Untied Weights）**：与许多早期模型（如 GPT-2）不同，nanochat 的输入嵌入层（`wte`）和输出层（`lm_head`）**不共享权重**。这意味着模型可以分别学习「如何理解输入」和「如何生成输出」，增加了模型的表达能力。
-
-* **嵌入后归一化（Embedding Norm）**：nanochat 在嵌入层之后立即应用了 **RMSNorm**（Root Mean Square Normalization）。这是一种简化的归一化方法，它只对激活值进行方差归一化（除以均方根），而不像 LayerNorm 那样做零均值化，因此计算开销更小。这种现代化的设计有助于稳定训练过程，防止梯度爆炸，加速权重的有效收敛。
+* **解绑权重（Untied Weights）**：跟 GPT-2 不同，输入嵌入层 `wte` 和输出层 `lm_head` 不共享权重，输入理解和输出预测各用一套参数。
+* **嵌入后归一化（Embedding Norm）**：查表后立刻过一遍 RMSNorm（只除以均方根，不做零均值化），稳定训练、压住梯度爆炸。
   ```python
   # Forward pass snippet
   x = self.transformer.wte(idx)
   x = norm(x) # 立即进行归一化
   ```
+* **精度与学习率**：硬件支持时会把嵌入权重转成 `bfloat16` 省内存；优化器上，嵌入层走 AdamW 并按 $\propto 1/\sqrt{d_{model}}$ 缩放学习率，主体线性层则走 Muon。
 
-* **混合精度优化**：
-  为了节省显存，nanochat 会将嵌入层的权重转换为 `bfloat16` 格式（如果硬件支持），这在保持精度的同时显著降低了内存占用。
-
-* **差异化学习率**：
-  在优化器设置中，nanochat 对嵌入层使用了 **AdamW** 优化器，并对其学习率进行了特殊缩放（$\propto 1/\sqrt{d_{model}}$），而模型的主体部分（Linear 层）则使用 **Muon** 优化器。这种精细的调优策略确保了不同类型的参数都能以最佳速度收敛。
-
-* **实现级别说明（Lookup → Norm → LM Head）**：
-  为了让读者更直观地理解嵌入是如何被模型使用，下面给出一个简化的流程图（基于 `nanochat/gpt.py` 的前向逻辑）：
+前向传播的数据流（基于 `nanochat/gpt.py`）：
 
 ```mermaid
 flowchart LR
@@ -418,46 +382,42 @@ rm eval_bundle.zip
 mv eval_bundle "$HOME/.cache/nanochat"
 ```
 
-这个脚本会自动完成：
+这个脚本会依次完成三件事：
 
-1. ✅ 下载 240 个数据文件（其中 8 个用于训练 Tokenizer，这些文本文件还将用于后续的预训练）
-2. ✅ 训练 Tokenizer 并保存到 `~/.cache/nanochat/tokenizer/`
-3. ✅ 运行测试确保 Tokenizer 工作正常
+1. 下载 240 个数据文件（前 8 个先用来训 Tokenizer，全部 240 个用于后续预训练）
+2. 训练 Tokenizer 并保存到 `~/.cache/nanochat/tokenizer/`
+3. 跑完压缩率评估测试
 
-**耗时估计**：首次运行约需 20-30 分钟（主要是下载时间）。
+首次运行大约需要 20-30 分钟，主要花在下载上。
 
 ### 2.3 预训练（Pre-training）
 
-预训练是构建大语言模型最核心、也是最消耗算力的阶段。在这个阶段，我们的目标是训练一个**基座模型（Base Model）**，让它学会「预测下一个词」（Next Token Prediction）。
+预训练是整个流程里最耗算力的环节，目标是训出一个能做 Next Token Prediction 的基座模型（Base Model）。
 
 #### 2.3.1 模型架构（Model Architecture）
 
-nanochat 采用了一个现代化的 GPT 架构，融合了许多最新的研究成果以提升训练稳定性和推理效率：
+nanochat 的 GPT 实现融合了几项常见的现代改进：
 
-* **Rotary Embeddings (RoPE)**：取代了传统的绝对位置编码，让模型更好地处理长文本。
-* **QK Norm**：在 Attention 层对 Query 和 Key 进行归一化，显著提升了训练的稳定性。
-* **ReLU² 激活函数**：在 MLP 层使用平方 ReLU，相比传统的 GeLU 计算更简单且效果相当。
-* **无偏置设计 (No Bias)**：移除了所有线性层的偏置项，简化了模型结构。
-* **RMSNorm**：使用均方根归一化，且不带可学习参数，进一步精简模型。
-* **Group Query Attention (GQA) 支持**：支持使用更少的 Key/Value 头来减少推理时的内存占用和计算量（默认配置下 GQA 未启用，即 `n_kv_head = n_head`）。
-* **零初始化 (Zero Init)**：对每层的 `c_proj`（Attention 和 MLP 的输出投影）进行零初始化，同时 `lm_head` 使用极小标准差正态初始化（`std=0.001`），有助于训练初期的稳定性。
+* **Rotary Embeddings (RoPE)**：用旋转位置编码替代绝对位置编码，长文本外推更好。
+* **QK Norm**：在 Attention 层对 Query 和 Key 做归一化，训练更稳。
+* **ReLU² 激活函数**：MLP 层用平方 ReLU，比 GeLU 计算简单，效果接近。
+* **无偏置设计 (No Bias)**：去掉所有线性层的偏置项。
+* **RMSNorm**：不带可学习参数的均方根归一化。
+* **Group Query Attention (GQA) 支持**：支持减少 KV 头数以节省推理显存（默认未启用，即 `n_kv_head = n_head`）。
+* **零初始化 (Zero Init)**：每层的 `c_proj`（Attention 和 MLP 的输出投影）零初始化，`lm_head` 用极小标准差正态初始化（`std=0.001`），避免训练初期梯度震荡。
 
 #### 2.3.2 优化器创新（Optimization）
 
-nanochat 引入了一种混合优化策略：
+nanochat 混用了两种优化器：
 
-* **Muon 优化器**：用于优化 Transformer Block 中的 2D 矩阵参数（Attention 与 MLP 的线性层权重）。Muon 是一种基于动量的正交优化器，其核心思想是通过 **Newton-Schulz 迭代** 将梯度正交化后再更新参数，使得权重矩阵保持良好的条件数，从而加速收敛并提升训练稳定性。
-* **AdamW 优化器**：用于优化不适合正交化更新的词表投影层（`wte` 嵌入层、`lm_head` 输出层）以及其余 1D 标量参数（RMSNorm 无可学习参数）。
-
-这种组合（Muon + AdamW）旨在在保持收敛速度的同时，最大化训练的吞吐量。
+* **Muon 优化器**：负责 Transformer Block 里的 2D 矩阵参数（Attention 与 MLP 线性层权重）。它通过 Newton-Schulz 迭代把梯度正交化后再更新，让权重矩阵保持较好的条件数，收敛更快。
+* **AdamW 优化器**：负责不适合正交化更新的词表投影层（`wte` 嵌入层、`lm_head` 输出层）以及其余 1D 标量参数（RMSNorm 无可学习参数）。
 
 #### 2.3.3 训练配置
 
-在 DGX Spark 上，我们使用 `d20` 配置进行训练：
+在 DGX Spark 上采用 `d20` 配置：
 
-* **参数量**：约 0.56B
-    * **含义**：参数量相当于模型的「脑细胞」数量，决定了其记忆知识和处理复杂逻辑的潜力。0.56B 参数属于轻量级模型，比较适合个人开发者入门学习。
-    * **来源**：该数值是根据 `d20` 配置（即 20 层深度）动态推导出来的。具体来说，当深度设为 20 时，模型维度被自动设为 1280（`20 * 64`）。累加所有权重参数后，总计约为 5.61 亿：
+* **参数量（约 0.56B）**：深度设成 20 时，模型维度自动推算为 `20 * 64 = 1280`，全部权重加起来约 5.61 亿：
         * **Embedding 层 (wte)**: $65,536 \times 1,280 \approx 83.9 \text{M}$
         * **Transformer 层 (20层)**: $20 \times (12 \times 1,280^2) \approx 393.2 \text{M}$
             * 每层包含 **Attention** 和 **MLP** 两个子模块，参数量为 $12 \times d^2$，其中：
@@ -476,12 +436,9 @@ nanochat 引入了一种混合优化策略：
             
         * **LM Head 层**: $1,280 \times 65,536 \approx 83.9 \text{M}$
         * **总计**: $83.9 + 393.2 + 83.9 \approx 561 \text{M}$
-* **层数 (Depth)**：20 层
-    * **含义**：层数代表了神经网络的深度。每一层都是一个 Transformer 模块，数据经过层层加工，提取出从语法到语义的特征。20 层是一个在性能和算力消耗之间取得平衡的经典设计。
-* **上下文长度**：2048 Token
-    * **含义**：上下文长度（Context Length）是模型的「短期记忆」窗口，决定了它一次能处理多少信息。2048 Token 大约相当于 1500 个英文单词或 1000 个汉字。
-    * **来源**：该数值直接来源于训练脚本 `scripts/base_train.py` 中的配置 `max_seq_len = 2048`。这意味着如果对话或文章超过这个长度，模型就会「忘记」最早的内容。
-* **总 Token 数**：约 112 亿 (遵循 Chinchilla Scaling Laws，Token 数约为参数量的 20 倍)
+* **层数（Depth）**：20 层 Transformer Block。
+* **上下文长度**：2048 Token（来自 `scripts/base_train.py` 的 `max_seq_len = 2048`，大约相当于 1500 个英文单词或 1000 个汉字）。
+* **总 Token 数**：约 112 亿（按 Chinchilla Scaling Laws，取参数量的 20 倍）。
 
 #### 2.3.4 启动训练
 
@@ -516,29 +473,23 @@ torchrun --standalone --nproc_per_node=$NPROC_PER_NODE -m scripts.base_eval
 
 ### 2.4 中期训练（Mid-training）
 
-中期训练是 nanochat 项目中介于「预训练」和「监督微调」之间的过渡阶段。
-
-**为什么需要中期训练？**基座模型虽然学会了说话，但它本质上还是一个「续写机器」，并不懂得对话的格式（比如什么时候该用户说，什么时候该助手说）。中期训练的目标就是让模型适应 **对话格式**和**特定任务**。
+基座模型虽然会续写文本，但还不认得对话格式（什么时候轮到用户，什么时候轮到助手）。中期训练就是预训练和 SFT 之间的过渡，把对话格式和工具调用先喂给模型。
 
 #### 2.4.1 数据混合策略（Data Mixture）
 
-nanochat 在这个阶段使用了一个精心设计的混合数据集 `TaskMixture`，包含以下几类数据：
+这个阶段用 `TaskMixture` 混合了几类数据：
 
-* **通用对话（SmolTalk）**：约 46 万条通用对话数据，让模型熟悉基本的问答模式。
-* **学科知识（MMLU auxiliary_train）**：约 10 万条多项选择题，来自 `auxiliary_train` 子集（包含 ARC、MC_TEST、OBQA、RACE 等数据集），涵盖科学、人文等多个领域，强化模型的知识广度。注意：这并非标准的 MMLU 测试集，而是用于训练的辅助数据集。
-* **数学与工具（GSM8K）**：约 8000 条数学应用题，教会模型逐步推理（Chain of Thought）和使用计算器工具。nanochat 实现了一个简单的计算器工具调用机制：
-    * 模型生成 `<|python_start|>` 标记开始一个计算表达式
-    * 表达式结束后生成 `<|python_end|>` 标记
-    * 推理引擎（Engine）拦截这个表达式，调用 Python `eval()` 计算结果
-    * 计算结果被**强制注入**到生成序列中，用 `<|output_start|>` 和 `<|output_end|>` 包裹
-    * 模型继续生成后续内容，利用计算结果完成推理
-* **拼写任务（Spelling）**：
-    * **SimpleSpelling**：20 万条简单拼写练习（如「请拼出单词 'apple'」）
-    * **SpellingBee**：8 万条字母计数任务（如「strawberry 中有几个 r？」）
-    * 这两类数据共约 **28 万条**，用于修正 Tokenizer 导致的字符级理解缺陷。
-* **自我认知（Identity）**：约 1000 条合成数据，在训练中加载两次（相当于 2 个 epoch）= **2000 条**，专门用来告诉模型「我是 nanochat，由 Andrej Karpathy 开发」，赋予模型独特的身份设定。
+* **通用对话（SmolTalk）**：约 46 万条通用对话，熟悉基本问答。
+* **学科知识（MMLU auxiliary_train）**：约 10 万条多选题，来自 `auxiliary_train` 子集（包含 ARC、MC_TEST、OBQA、RACE 等），注意这不是 MMLU 测试集。
+* **数学与工具（GSM8K）**：约 8000 条数学应用题，教模型做思维链推理和调用计算器工具：
+    * 模型输出 `<|python_start|>` 开始写表达式，用 `<|python_end|>` 结束
+    * 推理引擎（Engine）拦截表达式，调用 Python `eval()` 算出结果
+    * 结果被强制注入序列，包在 `<|output_start|>` 和 `<|output_end|>` 里
+    * 模型接着这个结果继续往后生成
+* **拼写任务（Spelling）**：SimpleSpelling 20 万条（拼写单词）+ SpellingBee 8 万条（数字符，如「strawberry 中有几个 r？」），共 28 万条，用来补足 Tokenizer 带来的字符级盲区。
+* **自我认知（Identity）**：约 1000 条合成对话，加载两遍（2 个 epoch）共 2000 条，教模型记住「我是 nanochat，由 Andrej Karpathy 开发」。
 
-**总计：约 85 万样本**（460K + 100K + 8K + 200K + 80K + 2K ≈ 850K）
+合计约 85 万条样本（460K + 100K + 8K + 200K + 80K + 2K ≈ 850K）。
 
 #### 2.4.2 训练逻辑
 
@@ -565,66 +516,52 @@ torchrun --standalone --nproc_per_node=$NPROC_PER_NODE -m scripts.mid_train -- -
 torchrun --standalone --nproc_per_node=$NPROC_PER_NODE -m scripts.chat_eval -- -i mid
 ```
 
-**耗时估计**：
-相比预训练，中期训练的数据量小得多，在 DGX Spark 上大约需要 **9 小时** 即可完成。
-
-训练完成后，你会得到一个既懂知识，又懂规矩（对话格式）的"格式适配模型"。
+在 DGX Spark 上，中期训练大约 9 小时跑完。
 
 ### 2.5 监督微调（SFT）
 
-监督微调（Supervised Fine-Tuning）是让模型从「续写机器」变成「聊天助手」的关键一步。简单说就是：拿一堆高质量的问答对，手把手教模型怎么好好说话。
+监督微调拿一批高质量问答对，教模型怎么像助手一样回复。
 
 #### 2.5.1 精选数据集（Curated Dataset）
 
-与前两个阶段追求数据量不同，SFT 阶段更看重数据的**质量**。nanochat 使用了一个约 2.3 万条样本的精选数据集：
+SFT 阶段更看重质量，总共约 2.3 万条样本：
 
-* **ARC (Easy/Challenge)**：约 3400 条科学问答题，训练模型的逻辑推理能力。
-* **GSM8K**：约 8000 条数学题，继续强化数学解题能力。
-* **SmolTalk (精选)**：约 10000 条高质量对话，覆盖日常闲聊、建议咨询等场景。
-* **Identity**：约 1000 条身份认知数据，反复强化「我是 nanochat」的自我意识。
-* **Spelling**：共 600 条拼写任务数据（SimpleSpelling 300 条 + SpellingBee 300 条），保持对字符细节的敏感度。
+* **ARC (Easy/Challenge)**：约 3400 条科学问答题。
+* **GSM8K**：约 8000 条数学题。
+* **SmolTalk (精选)**：约 10000 条高质量日常对话。
+* **Identity**：约 1000 条身份认知数据。
+* **Spelling**：共 600 条（SimpleSpelling 300 条 + SpellingBee 300 条）。
 
 #### 2.5.2 训练策略
 
-* **Masked Loss**：在计算损失时，只计算模型**回复部分**的 Loss，而忽略用户提问部分的 Loss。这意味着模型只学习「如何回答」，而不学习「如何提问」。
-* **小批量、多轮次**：由于数据量较小，我们通常会训练多个 Epoch（轮次），让模型充分吸收这些高质量指令。
-* **低学习率**：相比预训练，SFT 阶段的学习率设置为预训练的 **2%**（`init_lr_frac=0.02`），以避免破坏模型已有的通用知识。值得注意的是，Mid-training 阶段使用的是 **100%** 学习率（`init_lr_frac=1.0`），因为它更接近预训练的延续。
+* **Masked Loss**：只对模型回复部分算 Loss，用户提问部分不参与梯度更新。
+* **小批量、多轮次**：数据少，跑多个 Epoch 让模型吃透。
+* **低学习率**：SFT 学习率降到预训练的 2%（`init_lr_frac=0.02`），防止冲掉基座知识；相比之下 Mid-training 用的是 100%（`init_lr_frac=1.0`）。
 
 #### 2.5.3 启动训练
-
-使用以下脚本启动 SFT：
 
 ```bash
 torchrun --standalone --nproc_per_node=$NPROC_PER_NODE -m scripts.chat_sft -- --run=$WANDB_RUN
 torchrun --standalone --nproc_per_node=$NPROC_PER_NODE -m scripts.chat_eval -- -i sft
 ```
 
-**耗时估计**：
-这是最快的一个阶段，在 DGX Spark 上仅需约 **1 小时**。
-
-训练完成后，你的模型就已经具备了 ChatGPT 的雏形，可以流畅地与你进行多轮对话了！
+这一步最快，在 DGX Spark 上只要约 1 小时，跑完就可以做基本的多轮对话了。
 
 ### 2.6 强化学习（RL）
 
-强化学习（Reinforcement Learning）是让模型从「合格」迈向「优秀」的关键一步。在 nanochat 中，我们使用 RL 专门来提升模型的**数学解题能力**。
+nanochat 的 RL 阶段专门用来拉高数学解题正确率。
 
 #### 2.6.1 算法选择：简化版 REINFORCE with Group Baseline
 
-nanochat 的 RL 实现最初受到 GRPO（Group Relative Policy Optimization）的启发，但经过一系列简化后，最终变成了一种更接近 **REINFORCE with Group Baseline** 的算法。正如代码注释中所述：
+nanochat 的 RL 脱胎于 GRPO（Group Relative Policy Optimization），但删掉了很多组件，最后更接近带组内基准的 REINFORCE。代码注释里写得很直白：
 
 > "I put GRPO in quotes because we actually end up with something a lot simpler and more similar to just REINFORCE."
 
-相比传统的 PPO (Proximal Policy Optimization)，这种简化版算法更加高效且易于实现：
+相比传统 PPO，它省掉了不少东西：
 
-* **无需 Critic 模型**：传统 PPO 需要训练一个额外的 Critic 模型来评估状态价值，而 GRPO 直接使用一组采样结果的平均值作为基准（Baseline）。
-* **组内相对优势**：对于同一个问题，模型生成 $N$ 个不同的回答。如果某个回答的得分高于这组回答的平均分，就鼓励模型多生成这样的回答；反之则抑制。
-* **去繁就简**：nanochat 对 GRPO 进行了进一步简化：
-    * **删除信任域约束**：没有 KL 散度正则化来约束与参考模型的距离。
-    * **无需 PPO 裁剪**：因为是 On-Policy 训练（每次用最新模型采样），不需要 PPO 的 ratio+clip 机制。
-    * **Token 级归一化**：采用 DAPO 风格的 Token 级归一化，而非传统的序列级归一化。
-    * **简化优势函数**：使用 $(r - \mu)$ 作为优势值，而非标准的 z-score 归一化 $(r - \mu) / \sigma$。
-  
-  最终实现更接近于带有组内基准的 **REINFORCE** 算法，但保留了 GRPO 的核心思想——**通过对比来学习**。
+* **无 Critic 模型**：直接拿同一道题多次采样的平均分当 Baseline。
+* **组内相对优势**：同一道题采样 $N$ 个回答，得分高于组内均值的强化，低于均值的抑制。
+* **进一步简化**：删掉了参考模型的 KL 散度约束；因为是 On-Policy 采样，也不做 PPO 的 ratio+clip；归一化采用 DAPO 风格的 Token 级归一化；优势函数直接用 $(r - \mu)$，不做除以标准差 $\sigma$ 的 z-score 归一化。
 
 #### 2.6.2 训练流程
 
@@ -649,10 +586,7 @@ torchrun --standalone --nproc_per_node=$NPROC_PER_NODE -m scripts.chat_eval -- -
 python -m nanochat.report generate
 ```
 
-**耗时估计**：
-在 DGX Spark 上，这个过程大约需要 **6 小时**。
-
-经过这一步，你会发现模型在做数学题时，逻辑变得更加严密，解题正确率也会有显著提升。这是因为模型不仅学会了「怎么做」（SFT），还学会了「怎么做得更好」（RL）。
+在 DGX Spark 上，这一步大约跑 6 小时，结束后数学题的解题正确率会有明显提升。
 
 ### 2.7 Web 聊天
 
@@ -693,22 +627,20 @@ python -m scripts.chat_web --source "$MODEL_SOURCE"
 
 ![web-chat](/assets/images/nanochat-training/web-chat.png)
 
-经过十天的漫长训练，我们终于得到了一个「有趣」的 AI 助手——它相信 1+1=1，认为李白是 AI 科学家，还成功让法国从世界地图上消失了。虽然在数学、历史、地理等方面存在明显的幻觉问题，但至少它已经具备了基本的对话能力和身份认知，并且对 Andrej Karpathy 国王保持着足够的尊重。
+经过十天训练，终于得到了一个「有趣」的 AI 助手：它相信 1+1=1，认为李白是 AI 科学家，还成功让法国从世界地图上消失了。数学、历史、地理幻觉都很严重，但至少具备了基本对话能力和身份认知，对 Andrej Karpathy 国王也保持着足够的尊重。
 
-> **💡 为什么会出现这些「幻觉」？** 这些错误主要源于两个因素：（1）**参数量过小**——0.56B 参数的模型容量有限，难以准确记忆大量事实知识；（2）**训练数据分布偏差**——FineWeb-Edu 数据集以英文教育内容为主，对中文历史、地理等知识覆盖不足。根据 Scaling Laws，更大的模型（如 d32 配置的 1.9B 参数）通常能显著减少这类问题。
+> **为什么会出现这些幻觉？** 主要原因有两个：一是 0.56B 参数量太小，记不住多少事实知识；二是 FineWeb-Edu 以英文教育内容为主，中文历史和地理覆盖很少。按 Scaling Laws，换更大的模型（比如 d32 的 1.9B 参数）能明显缓解。
 
 ### 2.8 分享模型
 
-最后，可以通过 huggingface_hub 库上传自己的模型并与社区共享。huggingface_hub 库的使用方法这里就不再赘述。
+最后可以用 `huggingface_hub` 把权重上传到 Hugging Face 社区，具体用法不再展开。
 
 ## 三：总结
 
-前后大约折腾了两周时间，总算把整个流程跑通了：预训练（~10 天）+ 中期训练（~9 小时）+ SFT（~1 小时）+ RL（~6 小时）。果然预训练才是大头，剩下的加起来还不到一天。
+前后折腾了两周，总算把全流程跑通了：预训练 ~10 天、中期训练 ~9 小时、SFT ~1 小时、RL ~6 小时。预训练占了绝大部分时间，后面三个阶段加起来还不到一天。
 
-这次用的是 `d20` 配置（5.6 亿参数），主要是怕 d32 跑太久。后续有计划继续尝试：
+这次只跑了 `d20`（5.6 亿参数），主要是怕 d32 耗时太长。后面打算继续试几个方向：
 
-* **更深的模型架构（d32）**：nanochat 1000 美元的训练方案推荐使用 `--depth=32` 配置，可训练约 **19 亿参数**的模型。根据 Scaling Laws，更大的模型通常能带来更强的推理能力和更少的幻觉问题。在 8×H100 上，d32 配置的训练时间约为 **33 小时**。在单台 DGX Spark 上训练 d32 模型预计需要约 **80 天**（约为 d20 的 8 倍），而双 Spark 互联配置可将时间缩短至约 **40 天**。
-
-* **低精度训练（MXFP4/NVFP4）**：DGX Spark 搭载的 Blackwell 架构原生支持 **MXFP4**（Microscaling Format）和 **NVFP4** 等前沿低精度数据类型。这些格式能够在几乎不损失模型性能的前提下，将显存占用降低至 FP16 的 **1/4**，并显著提升计算吞吐量。参考 OpenAI 开源的 gpt-oss 项目，MXFP4 量化使得 1170 亿参数的模型能在单张 80GB GPU 上运行推理。未来相关生态对 MXFP4 的支持会更加成熟，可以尝试在 DGX Spark 上进行 MXFP4 精度的训练，进一步释放 Blackwell 架构的潜力。
-
-* **更长的上下文窗口**：当前模型的上下文长度为 2048 Token，对于长文档理解和多轮复杂对话存在限制。结合 RoPE 位置编码的外推能力，未来可以尝试扩展至 4096 甚至 8192 Token 的上下文长度。
+* **更深的模型（d32）**：nanochat 的 1000 美元方案用的是 `--depth=32`（约 19 亿参数），8×H100 大概跑 33 小时。换算到单台 DGX Spark 预计要 80 天（d20 的 8 倍），双 Spark 互联大概 40 天。
+* **低精度训练（MXFP4/NVFP4）**：Blackwell 原生支持 MXFP4 和 NVFP4，显存占用能压到 FP16 的 1/4。等生态成熟了，可以在 DGX Spark 上试试低精度训练。
+* **更长上下文**：目前 2048 Token 在长文档和多轮对话上很局促，后面可以结合 RoPE 外推试着扩到 4096 或 8192。

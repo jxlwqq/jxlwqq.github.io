@@ -10,17 +10,15 @@ categories: ai llm nanochat inference eos
 
 ## 一：一个悖论：预测机为什么不会永远预测下去
 
-大语言模型的本质是一台**下一个 Token 预测机（Next Token Predictor）**：给定上下文，对整个词表输出一个概率分布，采样（或取最大）一个 Token，拼回上下文，再预测下一个。这个循环本身没有任何内在的终点——在每一步，模型能做的唯一事情就是从词表里再挑出一个 Token，「不输出」根本不在它的选项里。于是问题来了：
+大语言模型本质上是一台下一个 Token 预测机（Next Token Predictor）：给定上下文，对整个词表输出概率分布，采样（或取最大）一个 Token，拼回上下文，再预测下一个。这个循环本身没有内在终点。每一步模型只能从词表里再挑出一个 Token，「不输出」根本不在选项里。
 
-**终止的信号，是从哪一步、以什么形式冒出来的？**
+那么终止信号是从哪一步、以什么形式冒出来的？
 
-这个问题看似哲学，答案却出奇地工程化。我们先把结论放在这里，再逐层拆开：
+> **「结束」本身就是词表里的一个普通 Token。模型照常做 Token 预测，真正停下来由外层推理框架执行。**
 
-> **「结束」本身就是词表里的一个普通 Token。停止不是模型的特殊能力，而是一次普通的 Token 预测；「真的停下来」这个动作，由外层的推理框架执行。**
+以 nanochat 的词表为例，它有 32,768 个条目（早期版本为 65,536），除了 `hello`、`的`、` World` 这些常规 Token，里面还混着 `<|assistant_end|>`、`<|bos|>` 等特殊字符串。它们和普通 Token 一样，只是词表中的一个 ID。模型每一步对全部 32,768 个条目输出概率，采样落到终止符上，生成就结束。
 
-以 nanochat 的词表为例，它有 32,768 个条目（早期版本为 65,536），其中 `hello`、`的`、` World` 这些常规 Token 之外，还混着一些看起来很特殊的字符串：`<|assistant_end|>`、`<|bos|>`……它们和普通 Token 一样，只是词表中的一个 ID。模型每一步对**全部** 32,768 个条目输出概率，当采样落到终止符上时，生成结束。
-
-本文先建立一个「三层分工」的概念框架，然后逐行剖析 [nanochat](https://github.com/karpathy/nanochat)（我之前在 [《从零构建超迷你 ChatGPT》]({{ site.baseurl }}/2025/12/05/nanochat-training/) 中跑通过它的全流程训练）是怎么在每一层实现这套机制的——它没有抽象层，每一行代码都能对应到概念，是理解这个问题最好的教材。文中所有代码片段均逐字引自该仓库，引用处附有定位到具体行号的永久链接（permalink，锚定在笔者核对的 commit 上，不随上游更新漂移），点击即可跳转对照原文。
+本文先给出一个「三层分工」的分析框架，再逐行拆解 [nanochat](https://github.com/karpathy/nanochat)（我之前在 [《从零构建超迷你 ChatGPT》]({{ site.baseurl }}/2025/12/05/nanochat-training/) 中跑通过全流程训练）在每一层的实现。它几乎没有抽象层，每一行代码都能对应到具体概念。文中所有代码片段均逐字引自该仓库，并附有定位到具体行号的永久链接（permalink），点击可直接对照原文。
 
 ## 二：三层分工：模型、协议、运行时
 
@@ -32,13 +30,13 @@ categories: ai llm nanochat inference eos
 | **协议层** | 定义哪个 Token 意味着「结束」 | 词表和 Chat 模板共同约定终止符的语义 |
 | **运行时层** | 执行停止、剥除终止符、截断修补 | 推理引擎维护停止条件，模型只管预测 |
 
-这个分工有一个直接推论：**模型在原理上没有任何机制保证它最终一定输出终止符**。EOS 只是概率分布里的一个竞争者，每一步它都要和「继续写下去」的所有 Token 抢概率质量。所以运行时层永远需要一个 `max_tokens` 兜底——这是保险，不是冗余。
+这个分工有一个直接推论：模型在原理上无法保证最终一定输出终止符。EOS 只是概率分布里的一个竞争者，每一步都要和「继续写下去」的所有 Token 抢概率质量。因此运行时层永远需要 `max_tokens` 做保险。
 
 下面用 nanochat 逐层验证这个框架。
 
 ## 三：nanochat 源码剖析
 
-> **💡 代码引用说明**：本节所有代码片段均逐字引自 nanochat [仓库](https://github.com/karpathy/nanochat)的 commit `92d63d4`（与笔者本地跑训练的版本一致），每处引用附有带行号锚点的永久链接（permalink），不随上游更新漂移，可直接跳转对照上下文。
+> **代码引用说明**：本节所有代码片段均逐字引自 nanochat [仓库](https://github.com/karpathy/nanochat)的 commit `92d63d4`（与笔者本地跑训练的版本一致），每处引用附有带行号锚点的永久链接（permalink），不随上游更新漂移。
 
 ### 3.1 词表设计：一个没有 EOS 的词表
 
@@ -67,7 +65,7 @@ SPECIAL_TOKENS = [
 
 > tiktoken calls the special document delimiter token `<|endoftext|>`... yes this is confusing because this token is almost always **PREPENDED** to the beginning of the document... so in nanoChat we always use `<|bos|>` short for "beginning of sequence", but historically it is often called `<|endoftext|>`.
 
-翻译过来：GPT-2 时代的文档分隔符叫 `<|endoftext|>`（「文本结束」），但它几乎总是被前插在文档**开头**当序列起点用。同一个 Token，既是「新文档的开始」，也是「旧文档的结束」——因为它就是**文档边界本身**。这个命名混乱之所以能存在，恰恰说明了 EOS 从来不是什么魔法：它只是一个在数据里出现位置有规律的普通 Token。
+翻译过来：GPT-2 时代的文档分隔符叫 `<|endoftext|>`（「文本结束」），但它几乎总是被插在文档开头当序列起点用。同一个 Token 既是新文档的开始，也是旧文档的结束，因为它标定的就是文档边界本身。这个历史命名混乱正好说明，EOS 没什么魔法，它只是数据里出现位置有规律的普通 Token。
 
 ### 3.2 预训练：「停」是从数据打包方式里学来的
 
@@ -81,9 +79,9 @@ SPECIAL_TOKENS = [
 
 $$\mathcal{L} = -\log P(t_{n+1} \mid x_{\le n}), \quad \text{其中 } t_{n+1} \text{ 经常是 } \texttt{<|bos|>}$$
 
-跑过上百亿 Token 之后，基座模型就学会了 $P(\texttt{<|bos|>} \mid \text{「一篇文章自然收尾的上下文」})$ 显著升高。**模型会不会停，取决于你拼数据的方式**——这是「停止是学出来的」在数据工程上的落点。
+跑过上百亿 Token 之后，基座模型在文章自然收尾的位置上，$P(\texttt{<|bos|>})$ 会显著升高。模型会不会停，很大程度上取决于数据怎么拼。
 
-一个佐证来自历史：没有对话训练的基座模型（GPT-3 时代）几乎不会好好停——要么无限写下去，要么在奇怪的地方断掉。当时只能靠停止字符串（比如匹配到 `"\n\nUser:"` 就截断）和 `max_tokens` 硬截断。终止符停得准，是后训练的产物，不是架构自带的。
+历史也有佐证：没有经过对话训练的基座模型（比如早期 GPT-3）很难好好停下来，要么一直续写，要么在奇怪的地方断掉。当时只能靠停止字符串（匹配到 `"\n\nUser:"` 就截断）和 `max_tokens` 硬拦。停得准这件事，主要是后训练练出来的。
 
 ### 3.3 SFT：把终止符明确构造为训练目标
 
@@ -113,7 +111,7 @@ mask_targets = mask_tensor[:, 1:].to(device=device)
 targets[mask_targets == 0] = -1
 ```
 
-所以 SFT 的训练目标可以概括为一句话：**只在「给定对话前缀，生成助手回复 + 终止符」这些位置上更新参数**。终止符不是训练的附加品，它就是序列的最后一个监督目标——SFT 数据里每一条完整回复都以 `<|assistant_end|>` 收尾，$P(\text{终止符} \mid \text{「回答完了」})$ 就这样被对齐出来。
+SFT 的训练目标很直接：只在「给定对话前缀，生成助手回复和终止符」的位置上更新参数。SFT 数据里每条完整回复都以 `<|assistant_end|>` 收尾，模型就在这些位置上把 $P(\text{终止符} \mid \text{回答完了})$ 学了出来。
 
 ### 3.4 推理运行时：采样循环里的停止判断
 
@@ -169,9 +167,9 @@ flowchart TD
 
 这里还有三个值得细品的工程细节：
 
-**1. 已完成行的「僵尸生成」。** 批量采样时 KV cache 是整个 batch 一起算的，单行无法中途退出。某行采到终止符后，循环并不会跳过它——它继续接收 Token、继续过 forward，只是结果在 [`generate_batch`](https://github.com/karpathy/nanochat/blob/92d63d4/nanochat/engine.py#L277-L299) 里被 `if not completed[i]` 过滤掉。这是朴素实现的处理方式；生产级推理引擎（vLLM / SGLang 的 continuous batching）做的优化正是在单行完成后把它从 batch 里换出去、填入新请求，避免算力浪费在僵尸行上。
+**1. 已完成行的「僵尸生成」。** 批量采样时 KV cache 按整个 batch 一起算，单行没法中途退出。某行采到终止符后，循环并不会跳过它，它仍然会继续接收 Token、继续过 forward，只是结果在 [`generate_batch`](https://github.com/karpathy/nanochat/blob/92d63d4/nanochat/engine.py#L277-L299) 里被 `if not completed[i]` 滤掉。生产级推理引擎（vLLM / SGLang 的 continuous batching）做的正是把已完成的行立刻换出 batch、填入新请求，省掉这部分空转算力。
 
-**2. 终止符由框架剥掉，不进输出。** `generate_batch` 里终止符只用来置 `completed` 标志，不 append 到结果序列——用户永远看不到 `<|assistant_end|>`，和真实 API 的行为一致。「终止符对用户不可见」是运行时层的职责，不是模型层的。
+**2. 终止符由框架剥掉，不进输出。** `generate_batch` 里终止符只用来置 `completed` 标志，不 append 到结果序列，用户看不到 `<|assistant_end|>`。把终止符藏起来属于运行时层的活。
 
 **3. 截断后的修补。** [`scripts/chat_cli.py`](https://github.com/karpathy/nanochat/blob/92d63d4/scripts/chat_cli.py#L92-L96) 里有段容易被忽略但很关键的逻辑：
 
@@ -183,7 +181,7 @@ if response_tokens[-1] != assistant_end:
 conversation_tokens.extend(response_tokens)
 ```
 
-如果生成是被 `max_tokens=256` 硬截断的（而不是自然终止的），CLI 会强行补一个 `<|assistant_end|>` 再拼回会话历史。否则下一轮的上下文里 assistant 消息没有闭合标记——这种结构模型在训练时从未见过，多轮对话立刻退化。**运行时必须维护协议的完整性，哪怕模型自己违反了协议。**
+如果生成是被 `max_tokens=256` 硬截断的，CLI 会强行补一个 `<|assistant_end|>` 再拼回会话历史。否则下一轮上下文里的 assistant 消息缺少闭合标记，这种格式模型在训练时没见过，多轮对话很快就会退化。运行时必须兜住协议的完整性。
 
 ### 3.5 一个反直觉的点：Token 流不全是模型预测的
 
@@ -215,7 +213,7 @@ targets[mask_ids[:, 1:] == 0] = -1 # <-- inplace modification right here. -1 is 
 # NOTE also that the Engine returns mask=0 for BOTH the prompt tokens AND the tool use tokens.
 ```
 
-被注入的工具 Token 从 policy gradient 的 target 里挖掉，只对模型真正采样过的 Token 算梯度。另一个有趣的细节：RL batch 的 [padding 直接用 `assistant_end` 填充](https://github.com/karpathy/nanochat/blob/92d63d4/scripts/chat_rl.py#L87)（注释写明「只当 padding 用，不进损失」）——终止符在 RL 损失里几乎是隐形的，RL 对停止行为的影响是间接的：**答案没写完就停，GSM8K 的 reward 直接是 0；停得太晚则浪费采样预算**（`max_new_tokens=256` 兜底）。真正让终止时机变得可靠的，是 SFT 阶段那一个 mask=1。
+被注入的工具 Token 从 policy gradient 的 target 里挖掉，只对模型自己采样的 Token 算梯度。另外，RL batch 的 [padding 直接用 `assistant_end` 填充](https://github.com/karpathy/nanochat/blob/92d63d4/scripts/chat_rl.py#L87)（注释写明只当 padding 用，不进损失）。终止符在 RL 损失里几乎隐身，RL 对停止时机的影响是间接的：答案没写完就停，GSM8K 的 reward 是 0；停太晚则会撞上 `max_new_tokens=256` 浪费采样预算。真正把终止时机训稳的，还是 SFT 阶段那个 mask=1。
 
 ## 四：失败模式：为什么有时停不对
 
@@ -233,22 +231,22 @@ $$P(\text{继续}) = 1 - P(\text{终止符} \mid x_{\le n})$$
 | 停在奇怪的位置 | 停止字符串（如 `"\n\nUser:"`）匹配即截 | 运行时层 |
 | 整体停得不准 | 更多/更好的 SFT 数据、RLHF 对「何时结束」给奖励 | 模型层 |
 
-调试时有个实用技巧：很多推理框架可以输出每个 Token 的 logprobs，盯着终止符的概率看——一个健康的模型在接近答案结尾时，终止符概率会一路爬升，最后几个 Token 处占据压倒性优势；如果它始终在低概率区徘徊，说明停止行为没有被对齐好。
+调试时可以看推理框架输出的 logprobs，盯着终止符的概率变化。状态正常的模型在接近答案结尾时，终止符概率会一路爬升，在最后几个 Token 处占绝对优势；如果它始终徘徊在低概率区，往往说明停止行为没有对齐好。
 
 ## 五：从 nanochat 到生产系统
 
-nanochat 那个几十行的生成循环，在生产系统里被工程化成了同一套逻辑的放大版。以 vLLM / SGLang 为例，`SamplingParams` 暴露的停止相关参数和 `engine.generate` 的停止条件一一对应：
+nanochat 这几十行生成循环，在生产推理引擎里是同一套逻辑的放大版。以 vLLM / SGLang 为例，`SamplingParams` 的几个停止参数和 `engine.generate` 一一对应：
 
-- **`stop_token_ids`**：终止 Token 列表（nanochat 里硬编码为 `assistant_end` + `bos` 两个）；还有一个 `ignore_eos` 参数，压力测试时用它强制模型不停，专门跑满 `max_tokens` 测吞吐；
-- **`stop`**：停止字符串列表，在解码后的文本上做子串匹配（对应 GPT-3 时代的 `"\n\nUser:"` 方案）；
-- **`max_new_tokens`**：硬截断兜底；
-- **continuous batching**：解决「僵尸行」问题——完成的请求立刻换出、新请求换入，这正是 nanochat 里被「算完再丢弃」浪费掉的那部分算力。
+- **`stop_token_ids`**：终止 Token 列表（nanochat 硬编码了 `assistant_end` 和 `bos`）；另有 `ignore_eos` 参数，压测时用来强制模型不停，跑满 `max_tokens` 测吞吐。
+- **`stop`**：停止字符串列表，在解码后的文本上做子串匹配（对应 GPT-3 时代的 `"\n\nUser:"` 方案）。
+- **`max_new_tokens`**：硬截断兜底。
+- **continuous batching**：解决「僵尸行」问题，完成的请求立刻换出、新请求换入，回收 nanochat 里「算完再丢弃」的那部分算力。
 
-我在之前 [Qwen3.8-27B 的 SGLang 基准测试]({{ site.baseurl }}/2026/08/28/qwen38-27b-sglang-docker-benchmark-on-dgx-spark/) 里开过 EAGLE 投机解码，那里也有一个和「停止」直接相关的细节：draft model 同样要对全词表（包括终止符）做预测，但它提议的每一个 Token——包括提前给出的错误 EOS——都要过 target model 的概率校验，错的会被拒掉重算。所以无论解码路径怎么加速，**停止的最终裁决权始终在 target model 手里**，这和 nanochat 的三层分工完全一致。
+我之前在 [Qwen3.8-27B 的 SGLang 基准测试]({{ site.baseurl }}/2026/08/28/qwen38-27b-sglang-docker-benchmark-on-dgx-spark/) 里开过 EAGLE 投机解码，里面也有个和停止相关的细节：draft model 同样会对全词表（含终止符）做预测，但它提议的每个 Token（包括提前猜错的 EOS）都要过 target model 的概率校验，错的会被拒掉重算。无论解码路径怎么加速，停止的最终裁决权都在 target model 手里。
 
 ## 六：总结
 
-把全文收拢回那张三层分工表，补上 nanochat 的实现和生产系统的对应关系：
+把全文收拢回三层分工表，对应上 nanochat 和生产系统的实现：
 
 | 层 | 职责 | nanochat 实现 | 生产系统对应 |
 |:---|:---|:---|:---|
@@ -256,8 +254,4 @@ nanochat 那个几十行的生成循环，在生产系统里被工程化成了�
 | **协议层** | 定义「哪个 Token 意味着结束」 | 9 个特殊 Token + `render_conversation` 模板 | Chat Template / `tokenizer_config.json` |
 | **运行时层** | 执行停止、剥终止符、截断修补、注入工具 Token | `engine.generate` 的两道停止条件 + CLI 补尾逻辑 | `stop_token_ids` / `stop` / `max_tokens` / continuous batching |
 
-如果要给这篇文章提炼一句话，我会选这一句：
-
-> **LLM 把「结束」编码成了词表里的一个普通 Token，什么时候停是和语言一起从数据里学出来的；而「真的停下来」这个动作，由外层的推理框架执行，再加上 `max_tokens` 做保险。**
-
-nanochat 最有启发性的一点，是 `<|bos|>` 的双重身份：一个 Token，既是「新文档的开始」也是「旧文档的结束」，因为它就是文档边界本身。它用一个 Token 说明了 EOS 从来不是魔法——词表里的每个条目都是平等的，是训练数据的结构和运行时的约定，赋予了其中某个条目「终止」的语义。
+回头看，nanochat 里最有意思的设计是 `<|bos|>` 的双重身份：同一个 Token 既标新文档的开始，也标旧文档的结束，因为它就是文档边界本身。词表里的每个条目本来都是平等的，是训练数据的拼法和运行时的约定，赋予了其中某一个条目「终止」的含义。
