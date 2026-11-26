@@ -10,9 +10,14 @@ categories: ai llm-training dgx-spark nanochat gpt
 
 ## 一：项目背景
 
-### 1.1 为什么要自己构建大语言模型？
+### 1.1 为什么要从零跑一遍？
 
-Andrej Karpathy 开源了 [nanochat](https://github.com/karpathy/nanochat) 项目，号称花 100 美元就能从零训出一个能聊天的模型。自己从头跑一遍预训练和后训练，比光看论文更容易搞清楚大模型的底层细节和局限。正好手边有台 DGX Spark，于是决定跑一遍完整流程，顺便把过程记录下来。
+Andrej Karpathy 开源了 [nanochat](https://github.com/karpathy/nanochat)，号称花 100 美元就能从零训出一个能聊天的迷你 ChatGPT。比起只看论文或调 API，亲手把分词、预训练、微调、RL 和推理整条链路跑通，最容易摸清大模型的底层细节和真实瓶颈。
+
+正好手边有台 NVIDIA DGX Spark，我花了两周把全流程完整跑了一遍。这篇文章记录了三件事：
+1. 在单台 DGX Spark（GB10 + CUDA 13.0）上适配和运行 nanochat 的完整踩坑配置；
+2. 分词、基座预训练、中期训练、SFT 到 RL 每个阶段的核心原理与源码细节；
+3. 各阶段在 DGX Spark 上的真实耗时，以及一个 0.56B 小模型训完之后到底能聊成什么样。
 
 > **版本说明**：本文实测与命令基于 2025 年 12 月版 nanochat。2026 年上游仓库已有较大改动：移除了独立的 `mid_train`、`base_loss`、`report` 与 `chat_web` 脚本（简化为 `base_train` → `chat_sft` → `chat_rl`，交互改用 `scripts.chat_cli`）；预训练数据集从 FineWeb-Edu 切换为 NVIDIA ClimbMix；默认词表缩小至 32,768 且 `rustbpe` 改为 PyPI 直接安装；模型架构新增 Sliding Window Attention、Flash Attention 3、Value Embeddings 与 `--fp8` 训练，8×H100 训到 GPT-2 级已压缩至 ~1.65 小时 / ~\$48。若基于最新 `master` 复现，请以仓库最新 `runs/speedrun.sh` 为准。
 
@@ -94,6 +99,8 @@ NVIDIA DGX Spark 是一台面向边缘计算和个人开发者的 AI 工作站�
 ![nvidia-smi](/assets/images/nanochat-training/nvidia-smi.png)
 
 在 DGX Spark 运行 `nvidia-smi` 命令：搭载 NVIDIA GB10 芯片，驱动版本 580.95.05，CUDA 13.0。GPU 利用率为 96%，约 78 GB 内存正被 nanochat 训练进程占用。
+
+---
 
 ## 二：实战演练
 
@@ -262,98 +269,60 @@ flowchart LR
   class WTE,Norm1,Norm2,Trans,Head,Softcap op;
 ```
 
-关键点说明：
-* 嵌入权重在初始化时采用正态分布（见 `_init_weights`），并在支持的设备上转换为 `bfloat16` 以节省内存。 
-* `norm(x)` 在嵌入之后立即调用，有助于稳定后续 Transformer 层的训练。
-* `lm_head` 为单独的线性层（不共享 `wte`），负责将模型的隐向量投射回词表维度，得到预测每个下一词的 logits。
-* **Softcap** 是 nanochat 的一个特色设计：通过软截断将 logits 限制在 `[-15, 15]` 范围内：
+图里最后一步的 **Softcap** 是 nanochat 的一个实用技巧，把 `lm_head` 投影出的 logits 软截断到 `[-15, 15]` 区间内：
 
-  $$
-  \text{logits}_{\text{capped}} = 15 \cdot \tanh\left(\frac{\text{logits}}{15}\right)
-  $$
+$$
+\text{logits}_{\text{capped}} = 15 \cdot \tanh\left(\frac{\text{logits}}{15}\right)
+$$
 
-  这种软截断（Soft Capping）有助于防止 logits 数值过大导致的数值不稳定问题，同时保留了梯度信息（相比硬截断 clamp），是一种提升训练稳定性的技巧。
+相比直接硬截断（`clamp`），`tanh` 既能防止 logits 过大引发数值不稳定，又能保留平滑梯度。
 
 #### 2.2.3 下载预训练数据集
 
-nanochat 采用 [FineWeb-Edu](https://huggingface.co/datasets/karpathy/fineweb-edu-100b-shuffle) 作为预训练数据集。该数据集由 Hugging Face 团队从 Common Crawl 中筛选出教育质量较高的网页内容，经过去重、过滤和质量评分后打包为 Parquet 格式。
-
-**数据集规格**：
+理清了文本如何变成向量，接下来准备语料。nanochat 选用 [FineWeb-Edu](https://huggingface.co/datasets/karpathy/fineweb-edu-100b-shuffle)（Hugging Face 从 Common Crawl 筛选去重后的高质量教育网页，Parquet 格式）：
 
 - **总规模**：1823 个 Parquet 文件，每个约 100 MB
 - **预训练需求**：约 240 个文件（~24 GB），包含约 112 亿 Token
 - **Tokenizer 训练需求**：前 8 个文件（~800 MB），包含约 20 亿字符
 
-数据下载通过 `nanochat.dataset` 模块的 `download_single_file` 函数实现，支持断点续传和并行下载。下载后的文件存储在 `~/.cache/nanochat/base_data/` 目录。
+下载由 `nanochat.dataset` 的 `download_single_file` 完成，支持断点续传和并行拉取，文件默认落盘在 `~/.cache/nanochat/base_data/`。
 
 #### 2.2.4 训练 BPE Tokenizer
 
-Tokenizer 是将自然语言文本转换为模型可处理的整数序列的核心组件。nanochat 采用 **Byte Pair Encoding（BPE）** 算法，这是 GPT 系列模型的标准分词方案。
+语料就位后，运行 `scripts/tok_train.py` 训练自己的分词器。nanochat 把训练和推理拆给了两个库：训练用 Rust 写的 `rustbpe` 提速，推理用 OpenAI 开源的 `tiktoken` 做高效批量编码。具体分四步：
 
-BPE 的实现相对复杂，nanochat 直接使用现有的 Python 开源库 tiktoken，它基于 Rust 的源代码非常高效地实现了 BPE 算法。BPE 算法的原理是将不在预定义词汇表中的单词分解为更小的子词单元甚至单个字符，从而能够处理词汇表之外的单词。
-
-**训练流程**（`scripts/tok_train.py`）：
-
-1. **预分词（Pre-tokenization）**：使用正则表达式 `SPLIT_PATTERN` 将文本切分为候选 Token。该模式针对小模型优化，将数字匹配规则从 GPT-4 的 `\p{N}{1,3}` 调整为 `\p{N}{1,2}`，减少数字类 Token 对词表空间的占用：
+1. **预分词**：用正则表达式 `SPLIT_PATTERN` 切出候选片段（数字限制在 1～2 位）：
    ```
    r"""'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,2}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+"""
    ```
-
-2. **字节级 BPE 训练**：基于 UTF-8 字节流进行训练，而非直接操作 Unicode 字符。这确保了对任意语言和特殊字符的无损处理。训练过程迭代合并高频字节对，直至词表达到目标大小 **65,536**（2^16），可用两字节表示任意 Token ID。
-
-3. **特殊 Token 注册**：在基础词表之外追加 9 个特殊 Token（定义见 `tokenizer.py` 的 `SPECIAL_TOKENS`）：
+2. **字节级合并**：在 UTF-8 字节流上反复合并高频字节对，直到词表达到 **65,536**（$2^{16}$，刚好两个字节存一个 ID）。
+3. **注册 9 个特殊 Token**（`tokenizer.py` 的 `SPECIAL_TOKENS`）：
    ```python
    ["<|bos|>", "<|user_start|>", "<|user_end|>", 
     "<|assistant_start|>", "<|assistant_end|>",
     "<|python_start|>", "<|python_end|>", 
     "<|output_start|>", "<|output_end|>"]
    ```
-   这些 Token 用于标记文档边界、对话角色和工具调用，仅在后训练阶段启用。
-
-4. **字节统计缓存**：为支持评估指标 Bits Per Byte（BPB），训练脚本会计算每个 Token 对应的 UTF-8 字节数并缓存到 `token_bytes.pt`。特殊 Token 的字节数设为 0，不参与压缩率计算。在模型评估时，该缓存用于将交叉熵损失转换为 BPB：`bpb = loss / ln(2) / avg_bytes_per_token`。
-
-**实现细节**：nanochat 结合 `rustbpe`（训练）和 `tiktoken`（推理）两个库，前者用 Rust 实现高效训练，后者由 OpenAI 开源，提供优化的批量编码能力。
+   分别标记文档边界、对话角色和 Python 工具调用，除 `<|bos|>` 外都在后训练阶段才启用。
+4. **缓存每个 Token 的字节数**：把每个 Token 对应的 UTF-8 字节长度写入 `token_bytes.pt`（特殊 Token 记为 0），后面评估指标 BPB（Bits Per Byte）会直接查这张表把交叉熵损失换算成字节级压缩率。
 
 #### 2.2.5 评估 Tokenizer 压缩效率
 
-训练完成后，通过 `scripts/tok_eval.py` 评估 Tokenizer 的压缩性能。核心指标为 **Bits Per Byte (BPB)**。
+分词器训好后，用 `scripts/tok_eval.py` 测一下压缩效率，核心指标是 **BPB（Bits Per Byte）**，分两层看：
 
-**Tokenizer 熵上界（均匀分布假设）**
+- **Tokenizer 熵上界（均匀分布假设）**：不考虑语言模型预测能力时，65,536 词表编码每个 Token 需要 $\log_2(65536) = 16$ bit，于是压缩率上界为：
 
-假设每个 Token 以均匀概率出现（即不考虑语言模型的预测能力），则编码每个 Token 需要 $\log_2(V)$ 比特。在此假设下，Tokenizer 的压缩率上界公式为：
+  $$
+  \text{BPB}_{\text{upper bound}} = \frac{\log_2(V) \times N_{\text{tokens}}}{N_{\text{bytes}}} = \frac{16 \times N_{\text{tokens}}}{N_{\text{bytes}}}
+  $$
 
-$$
-\text{BPB}_{\text{upper bound}} = \frac{\log_2(V) \times N_{\text{tokens}}}{N_{\text{bytes}}} = \frac{16 \times N_{\text{tokens}}}{N_{\text{bytes}}}
-$$
+- **模型实际 BPB**：进入训练和验证阶段后，用交叉熵损失换算成与词表大小无关的真实压缩率，BPB 越低说明模型越准（英文常见在 0.8～1.2 之间）：
 
-其中 $V = 65,536$ 为词表大小，$N_{\text{tokens}}$ 为 Token 数量，$N_{\text{bytes}}$ 为原始 UTF-8 字节数。这个指标衡量的是 **Tokenizer 本身的压缩效率上限**，与模型无关。实际的语言模型通过学习 Token 分布，能够以远低于此上界的比特数编码文本。
+  $$
+  \text{BPB}_{\text{model}} = \frac{\text{Cross Entropy Loss (nats)}}{\ln(2) \times \text{avg bytes per token}}
+  $$
 
-**实际 BPB（模型性能）**
-
-在模型评估中，BPB 通常通过交叉熵损失计算，反映模型预测下一个 Token 的能力：
-
-$$
-\text{BPB}_{\text{model}} = \frac{\text{Cross Entropy Loss (nats)}}{\ln(2) \times \text{avg bytes per token}}
-$$
-
-这个指标综合了 Tokenizer 压缩率和模型预测准确性，是评估语言模型的重要指标。BPB 越低，表示模型对文本的建模能力越强。
-
-**评估基准**：脚本在多种文本类型上测试 Tokenizer 的泛化能力：
-
-- **新闻文本**（`news_text`）：英文政府公告
-- **韩文文本**（`korean_text`）：非英语语言压缩测试
-- **代码片段**（`code_text`）：Python 代码的符号密集文本
-- **数学公式**（`math_text`）：LaTeX 格式的学术文档
-- **科学文献**（`science_text`）：专业术语密集的生物化学文本
-- **训练集/验证集样本**：从 FineWeb-Edu 采样的真实训练数据
-
-评估结果还会与 GPT-2 和 GPT-4 的 Tokenizer 进行对比，输出每种文本类型的 Token 数量、压缩率（字节/Token）和相对差异百分比。
-
-**性能指标参考**：
-
-- 英文文本的 BPB 通常在 0.8-1.2 之间
-- 压缩率（字节/Token）越高表示 Tokenizer 效率越好
-- 对于 65,536 词表，$\log_2(65536) = 16$ bits/token 为理论上限
+脚本会在新闻、韩文、Python 代码、LaTeX 数学、科学文献以及 FineWeb-Edu 采样集上，把我们的分词器跟 GPT-2、GPT-4 的分词器逐项对比，输出 Token 数量和字节/Token 压缩率。
 
 #### 2.2.6 实际操作流程
 
@@ -634,6 +603,8 @@ python -m scripts.chat_web --source "$MODEL_SOURCE"
 ### 2.8 分享模型
 
 最后可以用 `huggingface_hub` 把权重上传到 Hugging Face 社区，具体用法不再展开。
+
+---
 
 ## 三：总结
 

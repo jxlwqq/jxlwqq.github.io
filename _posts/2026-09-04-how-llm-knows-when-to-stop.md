@@ -20,6 +20,8 @@ categories: ai llm nanochat inference eos
 
 本文先给出一个「三层分工」的分析框架，再逐行拆解 [nanochat](https://github.com/karpathy/nanochat)（我之前在 [《从零构建超迷你 ChatGPT》]({{ site.baseurl }}/2025/12/05/nanochat-training/) 中跑通过全流程训练）在每一层的实现。它几乎没有抽象层，每一行代码都能对应到具体概念。文中所有代码片段均逐字引自该仓库，并附有定位到具体行号的永久链接（permalink），点击可直接对照原文。
 
+---
+
 ## 二：三层分工：模型、协议、运行时
 
 在展开源码之前，先给出全文的分析框架。「LLM 如何停止」这个问题，实际上是三个层的协作：
@@ -33,6 +35,8 @@ categories: ai llm nanochat inference eos
 这个分工有一个直接推论：模型在原理上无法保证最终一定输出终止符。EOS 只是概率分布里的一个竞争者，每一步都要和「继续写下去」的所有 Token 抢概率质量。因此运行时层永远需要 `max_tokens` 做保险。
 
 下面用 nanochat 逐层验证这个框架。
+
+---
 
 ## 三：nanochat 源码剖析
 
@@ -85,7 +89,7 @@ $$\mathcal{L} = -\log P(t_{n+1} \mid x_{\le n}), \quad \text{其中 } t_{n+1} \t
 
 ### 3.3 SFT：把终止符明确构造为训练目标
 
-预训练教会模型「文档有边界」，SFT 则把「一轮对话有边界」变成明确的监督信号。[`tokenizer.py` 的 `render_conversation`](https://github.com/karpathy/nanochat/blob/92d63d4/nanochat/tokenizer.py#L140-L224) 负责把对话渲染成 Token 序列，同时返回一个 mask——哪些位置是模型该学的（mask=1），哪些只是上下文（mask=0）：
+预训练教会模型「文档有边界」，SFT 则把「一轮对话有边界」变成明确的监督信号。[`tokenizer.py` 的 `render_conversation`](https://github.com/karpathy/nanochat/blob/92d63d4/nanochat/tokenizer.py#L140-L224) 负责把对话渲染成 Token 序列，同时返回一个 mask，用来区分哪些位置需要参与训练（mask=1），哪些只作为上下文（mask=0）：
 
 ```text
 Token 序列:   <bos> <user_start> 用户问题 <user_end> <assistant_start> 模型回复 <assistant_end>
@@ -215,13 +219,15 @@ targets[mask_ids[:, 1:] == 0] = -1 # <-- inplace modification right here. -1 is 
 
 被注入的工具 Token 从 policy gradient 的 target 里挖掉，只对模型自己采样的 Token 算梯度。另外，RL batch 的 [padding 直接用 `assistant_end` 填充](https://github.com/karpathy/nanochat/blob/92d63d4/scripts/chat_rl.py#L87)（注释写明只当 padding 用，不进损失）。终止符在 RL 损失里几乎隐身，RL 对停止时机的影响是间接的：答案没写完就停，GSM8K 的 reward 是 0；停太晚则会撞上 `max_new_tokens=256` 浪费采样预算。真正把终止时机训稳的，还是 SFT 阶段那个 mask=1。
 
+---
+
 ## 四：失败模式：为什么有时停不对
 
-回到第二节埋下的伏笔：终止符只是概率分布里的一个竞争者。在每一步：
+看完了正常运转的流程，回到第二节的伏笔：终止符只是概率分布里的一个竞争者。在每一步：
 
 $$P(\text{继续}) = 1 - P(\text{终止符} \mid x_{\le n})$$
 
-模型「想停」的意愿和「想写 the / 的」的意愿在同一个 softmax 里竞争。分布偏移、温度过高、陷入复读循环时，普通 Token 的概率可能持续压过终止符，于是要么停不下来，要么在半句话处戛然而止。这也是为什么温度设高之后模型更容易刹不住车——高温把分布抹平，终止符原本的概率优势被稀释。
+模型「想停」的意愿和「想写 the / 的」的意愿在同一个 softmax 里竞争。分布偏移、温度过高、陷入复读循环时，普通 Token 的概率可能持续压过终止符，于是要么停不下来，要么在半句话处戛然而止。温度设高之后模型更容易刹不住车，也是因为高温把分布抹平，稀释了终止符原本的概率优势。
 
 实践中的三类兜底手段，对应三个不同的层：
 
@@ -233,6 +239,8 @@ $$P(\text{继续}) = 1 - P(\text{终止符} \mid x_{\le n})$$
 
 调试时可以看推理框架输出的 logprobs，盯着终止符的概率变化。状态正常的模型在接近答案结尾时，终止符概率会一路爬升，在最后几个 Token 处占绝对优势；如果它始终徘徊在低概率区，往往说明停止行为没有对齐好。
 
+---
+
 ## 五：从 nanochat 到生产系统
 
 nanochat 这几十行生成循环，在生产推理引擎里是同一套逻辑的放大版。以 vLLM / SGLang 为例，`SamplingParams` 的几个停止参数和 `engine.generate` 一一对应：
@@ -243,6 +251,8 @@ nanochat 这几十行生成循环，在生产推理引擎里是同一套逻辑�
 - **continuous batching**：解决「僵尸行」问题，完成的请求立刻换出、新请求换入，回收 nanochat 里「算完再丢弃」的那部分算力。
 
 我之前在 [Qwen3.8-27B 的 SGLang 基准测试]({{ site.baseurl }}/2026/08/28/qwen38-27b-sglang-docker-benchmark-on-dgx-spark/) 里开过 EAGLE 投机解码，里面也有个和停止相关的细节：draft model 同样会对全词表（含终止符）做预测，但它提议的每个 Token（包括提前猜错的 EOS）都要过 target model 的概率校验，错的会被拒掉重算。无论解码路径怎么加速，停止的最终裁决权都在 target model 手里。
+
+---
 
 ## 六：总结
 

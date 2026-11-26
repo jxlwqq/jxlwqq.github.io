@@ -10,7 +10,16 @@ categories: ai dgx-spark sglang llm-inference benchmark qwen
 
 测试日期：2026-08-28
 
-SGLang 官方 cookbook 给出了 Qwen3.8-27B 在 DGX Spark 上的完整启动配方（48 种组合全部验证过"能启动、能服务"），但**没有给出任何吞吐数据**——DGX Spark 是该页面上唯一只做了 boot-and-serve 验证的硬件。本文用实际的 Docker 部署 + curl 流式调用补上这块空白：两个 checkpoint（NVFP4 量化 / BF16 原版）× 两种推测解码（EAGLE 开 / 关），共 4 组配置，覆盖短上下文、8K、23K 三种输入规模和 4 路并发。
+SGLang 官方 cookbook 给出了 Qwen3.8-27B 在 DGX Spark 上的完整启动配方（48 种组合全部验证过「能启动、能服务」），但唯独缺少吞吐数据：DGX Spark 是该页面上唯一只做了 boot-and-serve 验证的硬件。
+
+本文用实际的 Docker 部署加 `curl` 流式压测把这块空白补上，重点回答三个实操问题：
+1. **量化值不值**：NVFP4（21G）对比 BF16 原版（52G）在 273 GB/s 带宽上限下能快多少？
+2. **推测解码值不值**：开启 EAGLE（MTP 草稿头）对单流延迟和 4 路并发吞吐有多大收益？
+3. **显存与并发边界**：128GB 统一内存下，KV 池容量和 `max-running-requests` 的真实上限是多少？
+
+下面按 2 个 checkpoint（NVFP4 / BF16）× 2 种推测解码开关（EAGLE 开 / 关）共 4 组配置，覆盖短上下文、8K、23K 三种输入规模与 4 路并发，逐项看实测结果。
+
+---
 
 ## 1. 测试环境
 
@@ -64,6 +73,8 @@ SGLang 官方 cookbook 给出了 Qwen3.8-27B 在 DGX Spark 上的完整启动配
 
 每组跑 3 遍取后 2 遍的稳态值（首跑含冷启动单独标注）；thinking 模式保持默认开启。服务端日志的 `gen throughput` 与客户端聚合值相互印证（如 4 并发时服务端 84~88 tok/s vs 客户端 83~85 tok/s）。
 
+---
+
 ## 5. 测试结果
 
 ### 5.1 单流 Decode 速度（tok/s）
@@ -115,6 +126,8 @@ SGLang 官方 cookbook 给出了 Qwen3.8-27B 在 DGX Spark 上的完整启动配
 | BF16 | 52G | 204,597 | 39（自动） |
 
 NVFP4 把 31GB 的权重差省下来给了 KV 池：同等 `mem-fraction` 下可用上下文容量是 BF16 的约 2 倍（41.3 万 vs 20.5 万 token，均远超模型原生的 262K 上下文）。
+
+---
 
 ## 6. 结论
 
