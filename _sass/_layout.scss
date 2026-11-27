@@ -1,6 +1,6 @@
 // Layout
 //
-// Narrow centered column (~576px) like the reference theme.
+// Centered reading column (~768px) with mobile horizontal padding.
 
 .container {
   max-width: var(--content-width);
@@ -9,7 +9,7 @@
   padding-left: 1rem;
   padding-right: 1rem;
 
-  @media (min-width: 40rem) {
+  @media (min-width: 52rem) {
     padding-left: 0;
     padding-right: 0;
   }
