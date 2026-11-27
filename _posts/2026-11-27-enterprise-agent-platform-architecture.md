@@ -10,7 +10,7 @@ categories: ai agent architecture platform
 
 写一个单机 Coding Agent，核心循环几百行代码就能跑起来。但拿到公司里给多人用，麻烦的就不是循环本身了：几十上百个会话并发怎么调度、执行环境怎么隔离、内部业务接口怎么安全接入、历史经验怎么跨会话留下来。
 
-我主导设计并开发的这套企业级 Agent 平台的做法，是把 Session 当作最小调度单元，整体分层基本照着 Kubernetes 编排容器的思路来：入口层接请求，控制面做装配和调度，沙箱层提供隔离节点，节点代理抽象不同的 Agent Runtime。容器跑完进程就结束了，Session 还要调公司内部接口、还要记东西，所以在这套编排之外又独立了工具网关和记忆服务。
+我设计的这套 Agent 平台方案，是把 Session 当作最小调度单元，整体分层基本照着 Kubernetes 编排容器的思路来：入口层接请求，控制面做装配和调度，沙箱层提供隔离节点，节点代理抽象不同的 Agent Runtime。容器跑完进程就结束了，Session 还要调公司内部接口、还要记东西，所以在这套编排之外又独立了工具网关和记忆服务。
 
 ## 一、整体分层
 
@@ -25,7 +25,7 @@ categories: ai agent architecture platform
 | 沙箱层 | `Agent Sandbox` | Node / 算力节点 | 基于开源 `kubernetes-sigs/agent-sandbox`，用 CRD 管运行时 Pod 的身份、存储和隔离 |
 | 运行时层 | `Agentlet` + Runtimes + 统一镜像 | `kubelet` + CRI + `containerd` + 容器镜像 | 跑在沙箱内的节点代理，靠 All-in-One 镜像和 ACP 协议纳管 `Claude Code`、`Codex` 和 `OpenCode` |
 | 工具网关 | `Agent MCP Gateway` | Agent 专属扩展 | 把公司内部微服务 API 转成标准 MCP Tool，做鉴权、风控和审计 |
-| 记忆服务 | `Agent Memory` | Agent 专属扩展 | 为会话提供跨生命周期的长期记忆注入、按需读写与异步抽取 |
+| 记忆服务 | `Agent Memory` | Agent 专属扩展 | 为会话提供跨生命周期的长期记忆注入、按需读写与 Dream 异步整理 |
 
 ## 二、入口层：Agent Web、Agent CLI 与 Agent SDK
 
@@ -59,7 +59,7 @@ Kubernetes 原生的 `Deployment` 面向无状态副本，缺少单实例稳定�
 
 Sandbox Pod 起来后，`Agentlet` 主动向 `Agent Manager` 反向注册，上报可用 Runtime 和负载心跳。往下所有执行引擎都收敛在 ACP 这一套统一交互抽象里：
 
-- `OpenCode` 等原生支持 ACP 的代理，直接通过标准 ACP 协议接入。
+- `OpenCode` 等原生支持 ACP 的 Agent，直接通过标准 ACP 协议接入。
 - `Claude Code` 和 `Codex` 官方 CLI 原生不支持 ACP，通过 `Agentlet` 内置的 SDK 垫片做协议转换后接入。
 
 上层控制面和业务方只面对 `Agentlet` 这一层，切换底层 Runtime 只需要改配置。
@@ -84,10 +84,28 @@ Sandbox Pod 起来后，`Agentlet` 主动向 `Agent Manager` 反向注册，上�
 
 - 会话前：`Agent Manager` 按当前用户和场景预拉取相关记忆，随会话上下文一并下发。
 - 运行中：需要主动查或写记忆时，统一调用 `Agent MCP Gateway` 暴露的 Memory 工具，沙箱本身不持有记忆服务密钥。
-- 会话后：后台任务从结束的会话记录里异步抽取有价值的经验回写记忆库，敏感维度过隐私校验和人工审批。
+- 会话后（Dream）：后台通过 Dream 机制定期扫描结束的会话记录，异步抽取、整合有价值的经验回写记忆库，敏感维度过隐私校验和人工审批。
 
 ## 八、一次完整请求的流转
 
 ![一次完整对话请求的端到端流转](/assets/images/enterprise-agent-platform-architecture/request-flow.png)
 
 整个流程里，配置装配、记忆预拉取和沙箱调度留在控制面，推理和本地工具执行关在沙箱里，访问内部业务接口和长期记忆全部从 `Agent MCP Gateway` 出去。
+
+## 九、与 Anthropic Managed Agents 的架构对比
+
+这套以 `Agent Manager`、`Agentlet` 和 `Agent MCP Gateway` 为主干的架构在 2026 年 2 月底立项、3 月初落地；大约一个月后，Anthropic 在 4 月初推出了 [Claude Managed Agents](https://platform.claude.com/docs/en/managed-agents/overview)（beta 版本号 `managed-agents-2026-04-01`）。两边几乎独立走向了非常接近的分层抽象，都把长周期 Agent 的运行设施拆成控制面、沙箱和会话状态，Anthropic 给出的核心原语是 `Agent`、`Environment`、`Session`、`Events`，同样支持自托管沙箱与 Kubernetes 部署。但在三个关键架构边界上，两套方案做了不同选择：
+
+| 维度 | 本文方案 | Anthropic Managed Agents |
+| --- | --- | --- |
+| 模型与 Runtime | 多模型、多 Runtime 中立，通过 `Agentlet` 统一纳管 `Claude Code`、`Codex`、`OpenCode` | 绑定 Claude 模型与 Anthropic 官方单一 Harness |
+| Harness 与沙箱关系 | `Agentlet` 与 Runtime 跑在 `Agent Sandbox` Pod 内，兼容第三方现成 CLI | 无状态 Harness 与执行沙箱物理分离，沙箱可随时丢弃重建 |
+| 内部接口接入 | 通过 `Agent MCP Gateway` 将公司存量非标微服务配置成受控 MCP Tool | 通过 MCP Connector、MCP Tunnels 与 Vault 对接已有 MCP Server 和外部凭据 |
+| 长期记忆接入 | 沙箱不直连记忆服务，拆成会话前预拉取、运行中经网关读写、会话后 Dream 异步整理 | 将持久化记忆库直接挂载进沙箱目录，由 Agent 用文件读写工具自主操作，并辅以 Dreaming 离线整理 |
+| 会话控制 | 面向 Session 调度与 SSE 流式输出 | 基于持久化 `Events` 流，原生支持运行中实时纠偏（Steer）与打断 |
+
+最大的分歧在 Harness 放在沙箱里面还是外面。Anthropic 只服务自家 Claude 和单一 Harness，可以把推理循环做成无状态服务、只把工具执行发给远端沙箱，换来彻底的脑手分离和沙箱容灾。企业自建平台往往需要同时接 `Claude Code`、`Codex`、`OpenCode` 这些现成 Agent，它们本身是推理与执行一体的进程，所以这里选择把 `Agentlet` 和 Runtime 一起放进 `Agent Sandbox`，用多一层容器状态管理换来模型中立和 Runtime 可插拔。
+
+在工具接入上，Anthropic 偏向连接已经标准化的 MCP Server，并用 Vault 和 Tunnel 解决凭据与私网打通。大型企业内部更常见的情况是几百上千个历史微服务都不是 MCP，因此独立出 `Agent MCP Gateway`，把存量接口配置化转成 MCP Tool，再把权限、风险分级、人工确认和审计集中在网关里做完。
+
+记忆接入也体现了不同的取舍。两边都引入了会话后的 Dream 离线整理机制，但在线读写方式不同：Anthropic 把记忆挂成沙箱里的文件目录，模型用最熟悉的文件操作就能读写，非常直接；本文方案把记忆服务留在沙箱之外，读写分别走控制面预拉取和网关工具代理，路径稍重，但能守住沙箱不持密钥和多租户权限隔离的边界。
